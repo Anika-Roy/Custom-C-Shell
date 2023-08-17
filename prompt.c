@@ -1,9 +1,6 @@
 #include "headers.h"
 #include "prompt.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
+
 /*
 Specification1
 On every line when waiting for user input, a shell prompt of the following form must appear along with it.

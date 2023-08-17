@@ -1,5 +1,6 @@
 #include "headers.h"
 #include "prompt.h"
+#include "handle_input_commands.h"
 
 int main()
 {
@@ -13,5 +14,7 @@ int main()
         prompt(store_calling_directory);
         char input[4096];
         fgets(input, 4096, stdin);
+        // printf("%s", input);
+        handle_input_commands(input);
     }
 }
