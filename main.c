@@ -1,5 +1,6 @@
 #include "headers.h"
 #include "promptHandler/prompt.h"
+#include "warpHandler/warp.h"
 
 #define MAX_TOKENS 1024
 #define MAX_ARGS 64
@@ -86,6 +87,10 @@ int main()
     char store_calling_directory[1024];
     getcwd(store_calling_directory, sizeof(store_calling_directory));
 
+    // store the previous directory for warp
+    char store_previous_directory[1024];
+    getcwd(store_previous_directory, sizeof(store_previous_directory));
+
     while (1)
     {
         // Print appropriate prompt with username, systemname and directory before accepting input
@@ -119,7 +124,7 @@ int main()
                 args[arg_count] = strtok(NULL, " \t\n");
             }
 
-            //print the command and arguments for debugging
+            // print the command and arguments for debugging
             // printf("Command: %s\n", args[0]);
             // printf("Arguments: \n");
             // for (int k = 1; k < arg_count; k++) {
@@ -130,6 +135,11 @@ int main()
             // Now you have the command and its arguments in the args array
             if(strcmp(args[0],"exit")==0){
                 exit(0);
+            }
+
+            // If the command is warp, call the warp function
+            if (strcmp(args[0], "warp") == 0) {
+                warp(args, arg_count, store_calling_directory, store_previous_directory);
             }
             
         }
