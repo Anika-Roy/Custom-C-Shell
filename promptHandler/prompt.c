@@ -19,12 +19,10 @@ void prompt(char *store_calling_directory) {
     char hostname[1024];
     char cwd[1024];
 
-    // Get the username
-    char *username = getenv("USER");
-    if (username == NULL) {
-        perror("getenv");
-        exit(EXIT_FAILURE);
-    }
+    // Get the username (automatically imported by Copilot)
+    struct passwd *p = getpwuid(getuid());
+    char *username = p->pw_name;
+
     
     // Get the system name (hostname)
     if (gethostname(hostname, sizeof(hostname)) != 0) {
@@ -38,11 +36,15 @@ void prompt(char *store_calling_directory) {
         exit(EXIT_FAILURE);
     }
 
-    if (strstr(cwd, store_calling_directory) == cwd) {
-        strcpy(cwd, "~");
+    //show the relative path from the home directory (autocompleted by Copilot)
+    if (strstr(cwd, store_calling_directory) != NULL) {
+        char *relative_path = strstr(cwd, store_calling_directory);
+        printf("<%s@%s:~%s> ", username, hostname, relative_path + strlen(store_calling_directory));
+    }
+    else{
+        printf("<%s@%s:%s> ", username, hostname, cwd);
     }
 
-    printf("<%s@%s:%s> ", username, hostname, cwd);
 }
     
 
