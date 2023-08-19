@@ -139,6 +139,7 @@ int main()
 
             // If the command is warp, call the warp function
             if (strcmp(args[0], "warp") == 0) {
+                //check for delimiter[TODO]
                 warp(args, arg_count, store_calling_directory, store_previous_directory);
             }
             
