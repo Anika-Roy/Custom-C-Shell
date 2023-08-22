@@ -147,7 +147,7 @@ int main()
             // If the command is peek, call the peek function
             if (strcmp(args[0], "peek") == 0) {
                 //check for delimiter[TODO]
-                peek(args, arg_count, store_previous_directory);
+                peek(args, arg_count, store_previous_directory,store_calling_directory);
             }
             
         }
