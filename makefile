@@ -1,2 +1,2 @@
 main:
-	gcc -g main.c promptHandler/prompt.c warpHandler/warp.c
+	gcc -g main.c promptHandler/prompt.c warpHandler/warp.c peekHandler/peek.c

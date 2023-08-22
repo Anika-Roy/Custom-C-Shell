@@ -1,6 +1,7 @@
 #include "headers.h"
 #include "promptHandler/prompt.h"
 #include "warpHandler/warp.h"
+#include "peekHandler/peek.h"
 
 #define MAX_TOKENS 1024
 #define MAX_ARGS 64
@@ -141,6 +142,12 @@ int main()
             if (strcmp(args[0], "warp") == 0) {
                 //check for delimiter[TODO]
                 warp(args, arg_count, store_calling_directory, store_previous_directory);
+            }
+
+            // If the command is peek, call the peek function
+            if (strcmp(args[0], "peek") == 0) {
+                //check for delimiter[TODO]
+                peek(args, arg_count, store_previous_directory);
             }
             
         }
