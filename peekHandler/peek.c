@@ -2,34 +2,8 @@
 
 /*
 Specification 4 : peek [8]
-‘peek’ command lists all the files and directories in the specified directories in lexicographic order (default peek does not show hidden files). You should support the -a and -l flags.
-
--l : displays extra information
--a : displays all files, including hidden files
-Similar to warp, you are expected to support “.”, “..”, “~”, and “-” symbols.
-
-Support both relative and absolute paths.
-If no argument is given, you should peek at the current working directory.
-Multiple arguments will not be given as input.
-The input will always be in the format :
-
-peek <flags> <path/name>
-Handle the following cases also in case of flags :
-
-peek -a <path/name>
-peek -l <path/name>
-peek -a -l <path/name>
-peek -l -a <path/name>
-peek -la <path/name>
-peek -al <path/name>
-Note :
-
-You can assume that the paths/names will not contain any whitespace characters.
-DON’T use ‘execvp’ or similar commands for implementing this.
-Use specific color coding to differentiate between file names, directories and executables in the output [green for executables, white for files and blue for directories].
-Print a list of file/folders separated by newline characters.
-The details printed with -l should be the same as the ls command present in Bash.
-
+‘peek’ command lists all the files and directories in the specified directories in lexicographic order (default peek does not show hidden files). 
+You should support the -a and -l flags.
 */
 
 void print_file_details(const char *path)
@@ -65,7 +39,7 @@ void print_file_details(const char *path)
     }
 }
 
-void peek(char *flags[], int flag_count, char *store_previous_directory, char *store_calling_directory)
+int peek(char *flags[], int flag_count, char *store_previous_directory, char *store_calling_directory)
 {
     char *path_or_name = flags[flag_count - 1];
 
@@ -90,7 +64,7 @@ void peek(char *flags[], int flag_count, char *store_previous_directory, char *s
     int show_hidden = 0;
     int show_details = 0;
 
-    // Parse the flags
+    // Parse the flags -> referred from ChatGPT
     for (int i = 1; i < flag_count; i++)
     {
         if (strcmp(flags[i], "-a") == 0)
@@ -108,15 +82,24 @@ void peek(char *flags[], int flag_count, char *store_previous_directory, char *s
         }
     }
 
-    // Open the directory
+    // Open the directory -> referred from ChatGPT + Copilot
+    // For lexicographic order, prompted ChatGPT to sort using alphasort after asking others
     DIR *d;
     struct dirent *dir;
+
+    struct dirent **entries;
+    int num_entries;
 
     d = opendir(path_or_name);
     if (d)
     {
-        while ((dir = readdir(d)) != NULL)
-        {
+        num_entries = scandir(path_or_name, &entries, NULL, alphasort);
+        if (num_entries < 0) {
+            perror("scandir");
+            return 1;
+        }
+        for (int i = 0; i < num_entries; i++) {
+            dir = entries[i];
             if (show_hidden || dir->d_name[0] != '.')
             {
                 // Print with different colors based on type
@@ -136,13 +119,44 @@ void peek(char *flags[], int flag_count, char *store_previous_directory, char *s
                     if (show_details)
                     {
                         printf("%s%s%s ", color_code, dir->d_name, ANSI_COLOR_RESET);
-                        print_file_details(path_or_name);
+                        print_file_details(dir->d_name);
                     }
                     else 
                         printf("%s%s%s\n", color_code, dir->d_name, ANSI_COLOR_RESET);
                 }
             }
+            free(entries[i]);
         }
+        // while ((dir = readdir(d)) != NULL)
+        // {
+        //     if (show_hidden || dir->d_name[0] != '.')
+        //     {
+        //         // Print with different colors based on type
+        //         struct stat file_stat;
+        //         if (stat(dir->d_name, &file_stat) == 0)
+        //         {
+        //             const char *color_code = ANSI_COLOR_RESET;
+        //             //check for directory
+        //             if (S_ISDIR(file_stat.st_mode)) {
+        //                 color_code = ANSI_COLOR_BLUE;
+        //             } else if (file_stat.st_mode & S_IXUSR) {
+        //                 color_code = ANSI_COLOR_GREEN;
+        //             } else {
+        //                 color_code = ANSI_COLOR_WHITE;
+        //             }
+ 
+        //             if (show_details)
+        //             {
+        //                 printf("%s%s%s ", color_code, dir->d_name, ANSI_COLOR_RESET);
+        //                 print_file_details(dir->d_name);
+        //             }
+        //             else 
+        //                 printf("%s%s%s\n", color_code, dir->d_name, ANSI_COLOR_RESET);
+        //         }
+        //     }
+        // }
+        free(entries);
         closedir(d);
     }
+    return 0;
 }

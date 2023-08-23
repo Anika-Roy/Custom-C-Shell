@@ -7,13 +7,15 @@
 #define ANSI_COLOR_WHITE   "\x1b[37m"
 
 #include <dirent.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include <grp.h>
 #include <time.h>
+#include <ctype.h>
 
 # include "../headers.h"
-void peek();
+int peek();
 
 #endif
