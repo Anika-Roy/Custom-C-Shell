@@ -176,6 +176,7 @@ int main()
             printf("%d->%s%c\n",j, tokens[j].token, tokens[j].delimiter);
         }
 
+        int flag=1;
         // execute all tokens in a loop (autocompleted by Copilot)
         for (int j = 0; j < i; j++) {   
 
@@ -207,6 +208,12 @@ int main()
                 }
                 strcat(original_command, &tokens[j].delimiter);
             }
+
+            // If pastevents was present, check if second arg was execute, only then save it
+            if((strcmp(args[0],"pastevents")==0 && arg_count>1 && strcmp(args[1],"execute")!=0) || (strcmp(args[0],"pastevents")==0 && arg_count==1) ){
+                flag=0;
+            }
+            
 
             // Now you have the command and its arguments in the args array
             if(strcmp(args[0],"exit")==0){
@@ -267,7 +274,7 @@ int main()
                 else {
                     if(arg_count==1){
                         for(int i=0;i<event_count;i++){
-                            printf("%s\n",events[i]);   
+                            printf("%s",events[i]);   
                         }
                     }
                 }
@@ -276,10 +283,11 @@ int main()
         }   
         // if not, add the input to the list of past events
         // also, if the original command contains the work 'pastevents'(apart from ), don't add it to the list
-        if (strstr(original_command,"pastevents")==NULL) {
+        if (flag) {
             // printf("reached here");
             if (event_count == 0 || strcmp(events[event_count - 1], original_command) != 0) {
                 // printf("%s\n", original_command);
+                // strcat(original_command, "\n");
                 add_event(original_command, events, &event_count);
                 write_past_events(events, event_count, history_file_path);
             }
