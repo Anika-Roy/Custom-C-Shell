@@ -8,7 +8,7 @@
 struct BackgroundProcess {
     pid_t pid;
     char name[MAX_COMMAND_LENGTH];
-    char status[10];// Stores "Running","Done","Failed" or "Killed"
+    char status[10];
 };
 // Data structure to store background processes using array
 struct BackgroundProcess background_processes[MAX_PROCESSES];
@@ -21,8 +21,8 @@ void insert_background_process(pid_t pid, char *name) {// autocompleted by Copil
     if (background_process_count < MAX_PROCESSES) {
         struct BackgroundProcess process;
         process.pid = pid;
-        strncpy(process.name, name, MAX_COMMAND_LENGTH - 1);
-        process.status[0] = '\0'; // Initialize status as empty
+        strcpy(process.name, name);
+        strcpy(process.status, "Running"); // Initialize status as running
         
         background_processes[background_process_count] = process;
         background_process_count++;
@@ -41,28 +41,50 @@ void remove_background_process(int index) {
     }
 }
 void check_background_processes() {
-    // Use waitpid with WNOHANG to check if any background processes have completed
-    // If a process has completed, print its name, PID, and exit status
-
-    int status;
     for (int i = 0; i < background_process_count; i++) {
-        pid_t result = waitpid(background_processes[i].pid, &status, WNOHANG);
+        pid_t pid = background_processes[i].pid;
+        int status;
+        pid_t result = waitpid(pid, &status, WNOHANG);
+
+        printf("result: %d\n",result);
         if (result == -1) {
+            // An error occurred
             perror("waitpid");
-        } else if (result > 0) {
+        } else if (result == 0) {
+            // The process is still running
+            continue;
+        } else {
+            // The process has exited
             if (WIFEXITED(status)) {
-                printf(background_processes[i].status, sizeof(background_processes[i].status), "Done");
-                printf("Background process '%s' (PID %d) exited normally\n", background_processes[i].name, background_processes[i].pid);
+                // The process exited normally
+                printf("%s (PID %d) exited normally with status %d\n", background_processes[i].name, pid, WEXITSTATUS(status));
+                // Update the status in your data structure
+                strcpy(background_processes[i].status, "Finished");
+                remove_background_process(i);
+                i--;
             } else if (WIFSIGNALED(status)) {
-                printf(background_processes[i].status, sizeof(background_processes[i].status), "Killed");
-                printf("Background process '%s' (PID %d) was killed\n", background_processes[i].name, background_processes[i].pid);
+                // The process was terminated by a signal
+                printf("%s (PID %d) terminated abnormally by signal %d\n", background_processes[i].name, pid, WTERMSIG(status));
+                // Update the status in your data structure
+                strcpy(background_processes[i].status, "Failed");
+                remove_background_process(i);
+                i--;
             }
-            // Remove the completed process from the array
-            remove_background_process(i);
-            i--; // To recheck the next element at the same index
         }
     }
 }
+
+void print_background_processes(){
+    printf("Background Processes:\n");
+    
+    for (int i = 0; i < background_process_count; i++) {
+        printf("PID: %d, Name: %s, Status: %s\n", 
+               background_processes[i].pid, 
+               background_processes[i].name, 
+               background_processes[i].status);
+    }
+}
+
 
 void execute_background(char *args[]) {
     pid_t child_pid = fork();
@@ -72,6 +94,9 @@ void execute_background(char *args[]) {
         exit(EXIT_FAILURE);
     } else if (child_pid == 0) {
         // Child process
+        printf("args:\n");
+        for(int i=0 ; i<2 ; i++)
+            printf("%s\n",args[i]);
         execvp(args[0], args);
         perror("execvp"); // This will be executed only if execvp fails
         exit(EXIT_FAILURE);
@@ -169,7 +194,7 @@ int main()
 
             // If the delimiter is '&', execute the command in the background
             if (delimiter == '&') {
-                // execute_background(args);
+                execute_background(args);
                 continue;
             }
 
@@ -283,6 +308,7 @@ int main()
         }
 
         // Check if any background processes have completed
+        print_background_processes();
         check_background_processes();
     }
 

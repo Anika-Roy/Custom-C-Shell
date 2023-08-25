@@ -43,24 +43,19 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
             }
             j++;    
         }
-        // Check if the last character of the token is '&' after trimming whitespaces
-        // If yes, set the delimiter and decrement j
-        int input_len = strlen(token);
-        while (token[input_len - 1] == ' ' || token[input_len - 1] == '\t') {
-            token[input_len - 1] = '\0';
-            input_len--;
-        }
-        if (strlen(token) > 0 && token[strlen(token) - 1] == '&') {
-            // If the last character is '&', set the delimiter and increment j
-            tokens[j - 1].delimiter = '&';
-            j--;
-        }
     }
+    // printf("%d\n",j);
+    //Check if the last token is a newline:
+    // if it is, decrement j by 1 and return
+    if(tokens[j-1].token[0]=='\n')
+        j--;
+
+    // printf("%d\n",j);
     // print the tokens
-    for (int k = 0; k < j; k++) {
-        printf("%d: %s\n", k, tokens[k].token);
-        printf("%d: %c\n", k, tokens[k].delimiter);
-    }
+    // for (int k = 0; k < j; k++) {
+    //     printf("%d: %s\n", k, tokens[k].token);
+    //     printf("%d: %c\n", k, tokens[k].delimiter);
+    // }
     return j;
 }
 
