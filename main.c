@@ -3,76 +3,69 @@
 #include "warpHandler/warp.h"
 #include "peekHandler/peek.h"
 #include "pasteventsHandler/pastevents.h"
+#define MAX_PROCESSES 100
 
-// Function to execute background commands -->   ChatGPT referred
-void execute_background_commands(char* tokens[], int i){
-    // // Create a new process using fork
-    // pid_t pid = fork();
+struct BackgroundProcess {
+    pid_t pid;
+    char name[MAX_COMMAND_LENGTH];
+    char status[10];// Stores "Running","Done","Failed" or "Killed"
+};
+// Data structure to store background processes using array
+struct BackgroundProcess background_processes[MAX_PROCESSES];
+int background_process_count = 0;
 
-    // if (pid == -1)
-    // {
-    //     perror("fork");
-    //     exit(EXIT_FAILURE);
-    // }
-    // else if (pid == 0) // Child process
-    // {
-    //     // Tokenize the command for exec
-    //     char *command = tokens[0];
-    //     char *args[64]; // Adjust the size if needed
-
-    //     char *token = strtok(command, " ");
-    //     int arg_index = 0;
-    //     while (token != NULL)
-    //     {
-    //         args[arg_index++] = token;
-    //         token = strtok(NULL, " ");
-    //     }
-    //     args[arg_index] = NULL;
-
-    //     // Execute the command using exec
-    //     execvp(args[0], args);
+// insert a background process into an array
+void insert_background_process(pid_t pid, char *name) {// autocompleted by Copilot and Skeleton given by ChatGPT
+    // Insert the process into the array
+    // Update background_process_count
+    if (background_process_count < MAX_PROCESSES) {
+        struct BackgroundProcess process;
+        process.pid = pid;
+        strncpy(process.name, name, MAX_COMMAND_LENGTH - 1);
+        process.status[0] = '\0'; // Initialize status as empty
         
-    //     // If execvp returns, an error occurred
-    //     perror("execvp");
-    //     exit(EXIT_FAILURE);
-    // }
-    // else // Parent process
-    // {
-    //     // Print the process id of the child process
-    //     printf("Process id of the child process: %d\n", pid);
-    // }
+        background_processes[background_process_count] = process;
+        background_process_count++;
+    } else {
+        fprintf(stderr, "Maximum number of background processes reached\n");
+    }
 }
 
-// Function to execute sequential commands -->   ChatGPT referred
-void execute_sequential_commands(char* tokens[], int count) {
-    // for (int i = 0; i < count; i++) {
-    //     // Fork a new process
-    //     pid_t pid = fork();
-    //     if (pid == -1) {
-    //         perror("fork");
-    //         exit(EXIT_FAILURE);
-    //     } else if (pid == 0) { // Child process
-    //         // Tokenize the command
-    //         char *args[64]; // Adjust size if needed
-    //         char *token = strtok(tokens[i], " ");
-    //         int arg_index = 0;
-    //         while (token != NULL) {
-    //             args[arg_index++] = token;
-    //             token = strtok(NULL, " ");
-    //         }
-    //         args[arg_index] = NULL;
+// remove a background process from an array
+void remove_background_process(int index) {
+    if (index >= 0 && index < background_process_count) {
+        for (int i = index; i < background_process_count - 1; i++) {
+            background_processes[i] = background_processes[i + 1];
+        }
+        background_process_count--;
+    }
+}
 
-    //         // Execute the command using execvp
-    //         execvp(args[0], args);
-            
-    //         // If execvp returns, an error occurred
-    //         perror("execvp");
-    //         exit(EXIT_FAILURE);
-    //     } else { // Parent process
-    //         // Wait for the child process to finish
-    //         wait(NULL);
-    //     }
-    // }
+// check if a background process has completed
+
+
+void execute_background(char *args[]) {
+    pid_t child_pid = fork();
+
+    if (child_pid < 0) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    } else if (child_pid == 0) {
+        // Child process
+        execvp(args[0], args);
+        perror("execvp"); // This will be executed only if execvp fails
+        exit(EXIT_FAILURE);
+    } else {
+        // Parent process
+        printf("Background process '%s' started with PID %d\n", args[0], child_pid);
+        // Store child_pid in your data structure for background processes
+        insert_background_process(child_pid, args[0]);
+    }
+}
+
+void check_background_processes() {
+    // Use waitpid with WNOHANG to check if any background processes have completed
+    // If a process has completed, print its name, PID, and exit status
 }
 
 int main()
@@ -154,102 +147,125 @@ int main()
                     strcat(original_command, &delimiter);
                 token_count++;
             }
-
             // If pastevents was present, check if second arg was execute, only then save it
             if((strcmp(args[0],"pastevents")==0 && arg_count>1 && strcmp(args[1],"execute")!=0) || (strcmp(args[0],"pastevents")==0 && arg_count==1) ){
                 flag=0;
             }
-            
-            // Now you have the command and its arguments in the args array
-            if(strcmp(args[0],"exit")==0){
-                exit(0);
+
+            // If the delimiter is '&', execute the command in the background
+            if (delimiter == '&') {
+                execute_background(args);
+                continue;
             }
 
-            // If the command is warp, call the warp function
-            else if (strcmp(args[0], "warp") == 0) {
-                //check for delimiter[TODO]
-                warp(args, arg_count, store_calling_directory, store_previous_directory);
-            }
+            // If the delimiter is ';', execute the command in the foreground
+            pid_t child_pid = fork();
 
-            // If the command is peek, call the peek function
-            else if (strcmp(args[0], "peek") == 0) {
-                //check for delimiter[TODO]
-                peek(args, arg_count, store_previous_directory,store_calling_directory);
-            }
+            if (child_pid < 0) {
+                perror("fork");
+                exit(EXIT_FAILURE);
+            } else if (child_pid == 0) {
+                // Child process
+                
+                //---------------------------------------------------------------------------------
 
-            else if(strcmp(args[0],"pastevents")==0){
-                /*
-                if its pastevents execute <index>, 
-                replace the command in the args array with the command at index <index>, 
-                decrement j and run the loop again
-                This way, we don't store it in the history and we can execute it
-                */ 
-                if(arg_count>1 && strcmp(args[1],"execute")==0){
-                    // args[2]="<index>"
-                    int index=atoi(args[2]);
-                    if(index>event_count){
-                        printf("Index out of bounds\n");
+                // Now you have the command and its arguments in the args array
+                if(strcmp(args[0],"exit")==0){
+                    exit(0);
+                }
+
+                // If the command is warp, call the warp function
+                else if (strcmp(args[0], "warp") == 0) {
+                    //check for delimiter[TODO]
+                    warp(args, arg_count, store_calling_directory, store_previous_directory);
+                }
+
+                // If the command is peek, call the peek function
+                else if (strcmp(args[0], "peek") == 0) {
+                    //check for delimiter[TODO]
+                    peek(args, arg_count, store_previous_directory,store_calling_directory);
+                }
+
+                else if(strcmp(args[0],"pastevents")==0){
+                    /*
+                    if its pastevents execute <index>, 
+                    replace the command in the args array with the command at index <index>, 
+                    decrement j and run the loop again
+                    This way, we don't store it in the history and we can execute it
+                    */ 
+                    if(arg_count>1 && strcmp(args[1],"execute")==0){
+                        // args[2]="<index>"
+                        int index=atoi(args[2]);
+                        if(index>event_count){
+                            printf("Index out of bounds\n");
+                            continue;
+                        }
+                        strcpy(command,events[index-1]);
+                        // printf("%s\n",command);
+                        char* command_args[100];
+                        int command_arg_count=0;
+                        char* token=strtok(command," ");
+                        while(token!=NULL){
+                            command_args[command_arg_count]=token;
+                            command_arg_count++;
+                            token=strtok(NULL," ");
+                        }
+                        // printf("%s\n",command_args[0]);
+                        // replace 
+                        strcpy(args[0],command_args[0]);
+                        for(int k=1;k<command_arg_count;k++){
+                            strcpy(args[k],command_args[k]);
+                        }
+                        arg_count=command_arg_count;
+                        j--;
+                        // printf("args0:%s\n",args[0]);
+                        execute=1;
                         continue;
                     }
-                    strcpy(command,events[index-1]);
-                    // printf("%s\n",command);
-                    char* command_args[100];
-                    int command_arg_count=0;
-                    char* token=strtok(command," ");
-                    while(token!=NULL){
-                        command_args[command_arg_count]=token;
-                        command_arg_count++;
-                        token=strtok(NULL," ");
+                    else if(arg_count>1 && strcmp(args[1],"purge")==0){
+                        event_count=0;
+                        write_past_events(events,event_count,history_file_path);
+                        continue;
                     }
-                    // printf("%s\n",command_args[0]);
-                    // replace 
-                    strcpy(args[0],command_args[0]);
-                    for(int k=1;k<command_arg_count;k++){
-                        strcpy(args[k],command_args[k]);
-                    }
-                    arg_count=command_arg_count;
-                    j--;
-                    // printf("args0:%s\n",args[0]);
-                    execute=1;
-                    continue;
-                }
-                else if(arg_count>1 && strcmp(args[1],"purge")==0){
-                    event_count=0;
-                    write_past_events(events,event_count,history_file_path);
-                    continue;
-                }
-                else {
-                    if(arg_count==1){
-                        for(int i=0;i<event_count;i++){
-                            printf("%s\n",events[i]);   
+                    else {
+                        if(arg_count==1){
+                            for(int i=0;i<event_count;i++){
+                                printf("%s\n",events[i]);   
+                            }
                         }
                     }
                 }
-            }
 
-            else{
-                // execute using execvp
-                // execvp(args[0], args);
+                else{
+                    // execute using execvp
+                    execvp(args[0], args);
+                }
+
+                //---------------------------------------------------------------------------------
+                perror("execvp"); // This will be executed only if execvp fails
+                exit(EXIT_FAILURE);
+            } else {
+                // Parent process
+                time_t start_time = time(NULL);
+                int status;
+                wait(&status);
+                time_t end_time = time(NULL);
+                
+                if (end_time - start_time > 2) {
+                    printf("Foreground process '%s' took %lds\n", args[0], (long)(end_time - start_time));
+                }
             }
+            
         }   
         // if not, add the input to the list of past events
         // also, if the original command contains the work 'pastevents'(apart from ), don't add it to the list
         if (flag) {
-            // printf("reached here");
+
             if (event_count == 0 || strcmp(events[event_count - 1], original_command) != 0) {
-                // printf("%s\n", original_command);
-                // strcat(original_command, "\n");
                 add_event(original_command, events, &event_count);
-                // for(int i=0;i<event_count;i++){
-                //     printf("%d->%s\n",i,events[i]);
-                // }
                 write_past_events(events, event_count, history_file_path);
             }
         }
-        // print events array
-        // for(int i=0;i<event_count;i++){
-        //     printf("%d->%s\n",i,events[i]);
-        // }
 
     }
 
