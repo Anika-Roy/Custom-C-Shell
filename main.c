@@ -40,9 +40,29 @@ void remove_background_process(int index) {
         background_process_count--;
     }
 }
+void check_background_processes() {
+    // Use waitpid with WNOHANG to check if any background processes have completed
+    // If a process has completed, print its name, PID, and exit status
 
-// check if a background process has completed
-
+    int status;
+    for (int i = 0; i < background_process_count; i++) {
+        pid_t result = waitpid(background_processes[i].pid, &status, WNOHANG);
+        if (result == -1) {
+            perror("waitpid");
+        } else if (result > 0) {
+            if (WIFEXITED(status)) {
+                printf(background_processes[i].status, sizeof(background_processes[i].status), "Done");
+                printf("Background process '%s' (PID %d) exited normally\n", background_processes[i].name, background_processes[i].pid);
+            } else if (WIFSIGNALED(status)) {
+                printf(background_processes[i].status, sizeof(background_processes[i].status), "Killed");
+                printf("Background process '%s' (PID %d) was killed\n", background_processes[i].name, background_processes[i].pid);
+            }
+            // Remove the completed process from the array
+            remove_background_process(i);
+            i--; // To recheck the next element at the same index
+        }
+    }
+}
 
 void execute_background(char *args[]) {
     pid_t child_pid = fork();
@@ -61,11 +81,6 @@ void execute_background(char *args[]) {
         // Store child_pid in your data structure for background processes
         insert_background_process(child_pid, args[0]);
     }
-}
-
-void check_background_processes() {
-    // Use waitpid with WNOHANG to check if any background processes have completed
-    // If a process has completed, print its name, PID, and exit status
 }
 
 int main()
@@ -154,7 +169,7 @@ int main()
 
             // If the delimiter is '&', execute the command in the background
             if (delimiter == '&') {
-                execute_background(args);
+                // execute_background(args);
                 continue;
             }
 
@@ -267,6 +282,8 @@ int main()
             }
         }
 
+        // Check if any background processes have completed
+        check_background_processes();
     }
 
     return 0;
