@@ -177,11 +177,17 @@ int main()
         }
 
         int flag=1;
+        int execute=0;
         // execute all tokens in a loop (autocompleted by Copilot)
         for (int j = 0; j < i; j++) {   
 
             // Tokenize with all whitespaces (space and tab) to get command and arguments
-            char *command = tokens[j].token;
+            char *command;
+            if(execute==0){
+                command=tokens[j].token;
+            }
+            execute=0;
+
             char *args[MAX_ARGS];
             int arg_count = 0;
 
@@ -264,6 +270,8 @@ int main()
                     }
                     arg_count=command_arg_count;
                     j--;
+                    // printf("args0:%s\n",args[0]);
+                    execute=1;
                     continue;
                 }
                 else if(arg_count>1 && strcmp(args[1],"purge")==0){
