@@ -11,8 +11,47 @@
 #define FILENAME "pastevents.txt"
 
 #define MAX_EVENT_LENGTH 1000
+#define MAX_COMMAND_LENGTH 100
 
-void add_event(const char *event, char events[][MAX_EVENT_LENGTH], int *count) {
+struct TokenWithDelimiter {
+    char token[MAX_COMMAND_LENGTH];
+    char delimiter; // Stores either ';' or '&'
+};
+
+int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
+    // Tokenize with all whitespaces (space and tab) to get command and arguments
+    char *str1, *str2, *token, *subtoken, *saveptr1, *saveptr2;
+    int i = 0, j = 0;
+    for (str1 = input; ; str1 = NULL) {
+        token = strtok_r(str1, ";", &saveptr1);
+        if (token == NULL)
+            break;
+
+        // printf("%d: %s\n", i, token);
+
+        for (str2 = token; ; str2 = NULL) {
+            subtoken = strtok_r(str2, "&", &saveptr2);
+
+            //print
+            // printf(" --> %s\n", subtoken);
+            
+            // Check if the subtoken is the last token
+            if (subtoken == NULL) {
+                tokens[j-1].delimiter = ';';  // Set the delimiter directly
+                break;
+            }
+            else{
+                strcpy(tokens[j].token, subtoken);
+                tokens[j].delimiter = '&';
+            }
+            j++;
+        }
+        i++;
+    }
+    return j;
+}
+
+void add_event( char *event, char events[][MAX_EVENT_LENGTH], int *count) {   
     if (*count >= MAX_EVENTS) {
         // Remove the oldest event
         for (int i = 1; i < MAX_EVENTS; i++) {
@@ -31,6 +70,10 @@ void read_past_events(char events[][MAX_EVENT_LENGTH], int *count, const char *h
         while (*count < MAX_EVENTS && fgets(events[*count], sizeof(events[*count]), file)) {
             (*count)++;
         }
+        //remove newline from the end
+        for(int i=0;i<*count;i++){
+            events[i][strlen(events[i])-1]='\0';
+        }
         fclose(file);
     }
 }
@@ -44,11 +87,6 @@ void write_past_events(const char events[][MAX_EVENT_LENGTH], int count, const c
         fclose(file);
     }
 }
-
-struct TokenWithDelimiter {
-    char *token;
-    char delimiter; // Stores either ';' or '&'
-};
 
 // Function to execute background commands -->   ChatGPT referred
 void execute_background_commands(char* tokens[], int i){
@@ -140,7 +178,7 @@ int main()
     // Read past events from history_file_path
     char events[MAX_EVENTS][MAX_EVENT_LENGTH];
     int event_count=0;
-    read_past_events(events, &event_count, history_file_path);
+    read_past_events(events, &event_count, history_file_path);   
 
     // print events for debugging
     // for(int i=0;i<event_count;i++){
@@ -159,30 +197,26 @@ int main()
         original_command[0]='\0';
 
         // tokenise the input --> store in tokens as structs (autocompleted by Copilot)
-        // remove empty tokens obtained at the end
-        char *token = strtok(input, ";&\n");
-        struct TokenWithDelimiter tokens[MAX_TOKENS];
-        int i = 0;
-        while (token != NULL)
-        {
-            tokens[i].token = token;
-            tokens[i].delimiter = input[strlen(token)];
-            token = strtok(NULL, ";&\n");
-            i++;
-        }
+        // reference from linux manpages
 
-        // print the tokens for debugging
-        for (int j = 0; j < i; j++) {
-            printf("%d->%s%c\n",j, tokens[j].token, tokens[j].delimiter);
-        }
+        // declare array of structs to store tokens and their delimiters
+        struct TokenWithDelimiter tokens[MAX_TOKENS];
+        
+        int i=tokeniser(tokens,input);
+
+        // Print the tokens along with their delimiters from the array of structs
+        // for (int k = 0; k < i; k++) {
+        //     printf("Token: %s, Delimiter: %c\n", tokens[k].token, tokens[k].delimiter);
+        // }
 
         int flag=1;
         int execute=0;
+
+        char *command;
         // execute all tokens in a loop (autocompleted by Copilot)
         for (int j = 0; j < i; j++) {   
 
             // Tokenize with all whitespaces (space and tab) to get command and arguments
-            char *command;
             if(execute==0){
                 command=tokens[j].token;
             }
@@ -212,7 +246,7 @@ int main()
                     strcat(original_command, " ");
                     strcat(original_command, args[k]);
                 }
-                strcat(original_command, &tokens[j].delimiter);
+                // strcat(original_command, &delimiter);
             }
 
             // If pastevents was present, check if second arg was execute, only then save it
@@ -220,7 +254,6 @@ int main()
                 flag=0;
             }
             
-
             // Now you have the command and its arguments in the args array
             if(strcmp(args[0],"exit")==0){
                 exit(0);
@@ -282,12 +315,16 @@ int main()
                 else {
                     if(arg_count==1){
                         for(int i=0;i<event_count;i++){
-                            printf("%s",events[i]);   
+                            printf("%s\n",events[i]);   
                         }
                     }
                 }
             }
 
+            else{
+                // execute using execvp
+                // execvp(args[0], args);
+            }
         }   
         // if not, add the input to the list of past events
         // also, if the original command contains the work 'pastevents'(apart from ), don't add it to the list
