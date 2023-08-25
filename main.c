@@ -273,6 +273,12 @@ int main()
                     peek(args, arg_count, store_previous_directory,store_calling_directory);
                 }
 
+                // If the command is seek, call the seek function
+                else if (strcmp(args[0], "seek") == 0) {
+                    //check for delimiter[TODO]
+                    peek(args, arg_count,store_calling_directory);
+                }
+
                 else if(strcmp(args[0],"pastevents")==0){
                     /*
                     if its pastevents execute <index>, 
