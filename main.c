@@ -19,6 +19,9 @@ struct TokenWithDelimiter {
 };
 
 int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
+    // tokenise the input --> store in tokens as structs (autocompleted by Copilot)
+    // reference from linux manpages
+ 
     // Tokenize with all whitespaces (space and tab) to get command and arguments
     char *str1, *str2, *token, *subtoken, *saveptr1, *saveptr2;
     int i = 0, j = 0;
@@ -196,48 +199,36 @@ int main()
         char original_command[MAX_EVENT_LENGTH];
         original_command[0]='\0';
 
-        // tokenise the input --> store in tokens as structs (autocompleted by Copilot)
-        // reference from linux manpages
-
-        // declare array of structs to store tokens and their delimiters
+       // declare array of structs to store tokens and their delimiters
         struct TokenWithDelimiter tokens[MAX_TOKENS];
         
         int i=tokeniser(tokens,input);
 
-        // Print the tokens along with their delimiters from the array of structs
-        // for (int k = 0; k < i; k++) {
-        //     printf("Token: %s, Delimiter: %c\n", tokens[k].token, tokens[k].delimiter);
-        // }
-
         int flag=1;
         int execute=0;
+        int token_count=0;
 
-        char *command;
+        char delimiter;
+        char *args[MAX_ARGS];
+        int arg_count = 0;
         // execute all tokens in a loop (autocompleted by Copilot)
         for (int j = 0; j < i; j++) {   
+            // get delimiter
+            delimiter=tokens[j].delimiter;
+
+            char command[MAX_COMMAND_LENGTH];
 
             // Tokenize with all whitespaces (space and tab) to get command and arguments
             if(execute==0){
-                command=tokens[j].token;
+                arg_count = 0;
+
+                args[arg_count] = strtok(tokens[j].token, " \t\n");
+                while (args[arg_count] != NULL && arg_count < MAX_ARGS) {
+                    arg_count++;
+                    args[arg_count] = strtok(NULL, " \t\n");
+                }   
             }
             execute=0;
-
-            char *args[MAX_ARGS];
-            int arg_count = 0;
-
-            args[arg_count] = strtok(command, " \t\n");
-            while (args[arg_count] != NULL && arg_count < MAX_ARGS) {
-                arg_count++;
-                args[arg_count] = strtok(NULL, " \t\n");
-            }
-
-            // print the command and arguments for debugging
-            // printf("Command: %s\n",100 args[0]);
-            // printf("Arguments: \n");
-            // for (int k = 1; k < arg_count; k++) {
-            //     printf("%s ", args[k]);
-            // }
-            // printf("\n");
 
             // Concatenate all tokens(and their arguments) to get the original command(along with delimiter)
             if(strcmp(args[0],"pastevents")!=0){
@@ -246,7 +237,9 @@ int main()
                     strcat(original_command, " ");
                     strcat(original_command, args[k]);
                 }
-                // strcat(original_command, &delimiter);
+                if(token_count<i-1)
+                    strcat(original_command, &delimiter);
+                token_count++;
             }
 
             // If pastevents was present, check if second arg was execute, only then save it
@@ -285,7 +278,7 @@ int main()
                         printf("Index out of bounds\n");
                         continue;
                     }
-                    char* command=events[index-1];
+                    strcpy(command,events[index-1]);
                     // printf("%s\n",command);
                     char* command_args[100];
                     int command_arg_count=0;
@@ -334,9 +327,16 @@ int main()
                 // printf("%s\n", original_command);
                 // strcat(original_command, "\n");
                 add_event(original_command, events, &event_count);
+                // for(int i=0;i<event_count;i++){
+                //     printf("%d->%s\n",i,events[i]);
+                // }
                 write_past_events(events, event_count, history_file_path);
             }
         }
+        // print events array
+        // for(int i=0;i<event_count;i++){
+        //     printf("%d->%s\n",i,events[i]);
+        // }
 
     }
 
