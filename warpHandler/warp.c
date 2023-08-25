@@ -13,7 +13,8 @@ If no argument is present, then warp into the home directory.
 
 void warp(char *args[], int count, char *store_calling_directory, char* previous_directory) {
 
-    if(strcmp(args[1],"-")!=0){
+    // printf("%s\n", store_calling_directory);
+    if(count>1 && strcmp(args[1],"-")!=0){
         // store the current directory as the previous directory
         char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) == NULL) {
@@ -23,7 +24,9 @@ void warp(char *args[], int count, char *store_calling_directory, char* previous
         strcpy(previous_directory, cwd);
     }
 
-    // If no arguments are present, warp into the home directory
+    // printf("%s\n", store_calling_directory);
+
+    // If no arguments are present, warp into the home directory 
     if (count == 1) {
         if (chdir(store_calling_directory) != 0) {
             perror("chdir");

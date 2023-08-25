@@ -2,9 +2,46 @@
 #include "promptHandler/prompt.h"
 #include "warpHandler/warp.h"
 #include "peekHandler/peek.h"
+#include "pasteventsHandler/pastevents.h"
 
 #define MAX_TOKENS 1024
 #define MAX_ARGS 64
+
+#define MAX_EVENTS 15
+#define FILENAME "pastevents.txt"
+
+void add_event(const char *event, char events[][100], int *count, const char *history_file_path) {
+    if (*count >= MAX_EVENTS) {
+        // Remove the oldest event
+        for (int i = 1; i < MAX_EVENTS; i++) {
+            strcpy(events[i - 1], events[i]);
+        }
+        (*count)--;
+    }
+    strcpy(events[*count], event);
+    (*count)++;
+}
+
+void read_past_events(char events[][100], int *count, const char *history_file_path) {
+    FILE *file = fopen(history_file_path, "r");
+    if (file != NULL) {
+        *count = 0;
+        while (*count < MAX_EVENTS && fgets(events[*count], sizeof(events[*count]), file)) {
+            (*count)++;
+        }
+        fclose(file);
+    }
+}
+
+void write_past_events(const char events[][100], int count, const char *history_file_path) {
+    FILE *file = fopen(history_file_path, "w");
+    if (file != NULL) {
+        for (int i = 0; i < count; i++) {
+            fprintf(file, "%s", events[i]);
+        }
+        fclose(file);
+    }
+}
 
 struct TokenWithDelimiter {
     char *token;
@@ -92,6 +129,17 @@ int main()
     char store_previous_directory[1024];
     getcwd(store_previous_directory, sizeof(store_previous_directory));
 
+    // get the absolute path for the history file <FILENAME> and store it
+    char history_file_path[1024];
+    strcpy(history_file_path, store_calling_directory);
+    strcat(history_file_path, "/");
+    strcat(history_file_path, FILENAME);
+
+    // Read past events from history_file_path
+    char events[MAX_EVENTS][100];
+    int event_count=0;
+    read_past_events(events, &event_count, history_file_path);
+
     while (1)
     {
         // Print appropriate prompt with username, systemname and directory before accepting input
@@ -139,16 +187,69 @@ int main()
             }
 
             // If the command is warp, call the warp function
-            if (strcmp(args[0], "warp") == 0) {
+            else if (strcmp(args[0], "warp") == 0) {
                 //check for delimiter[TODO]
                 warp(args, arg_count, store_calling_directory, store_previous_directory);
             }
 
             // If the command is peek, call the peek function
-            if (strcmp(args[0], "peek") == 0) {
+            else if (strcmp(args[0], "peek") == 0) {
                 //check for delimiter[TODO]
                 peek(args, arg_count, store_previous_directory,store_calling_directory);
             }
+
+
+            else if(strcmp(args[0],"pastevents")==0){
+                /*
+                if its pastevents execute <index>, 
+                replace the command in the args array with the command at index <index>, 
+                decrement j and run the loop again
+                This way, we don't store it in the history and we can execute it
+                */ 
+                if(strcmp(args[1],"execute")==0){
+                    // args[2]="<index>"
+                    int index=atoi(args[2]);
+                    if(index>event_count){
+                        printf("Index out of bounds\n");
+                        continue;
+                    }
+                    char* command=events[index-1];
+                    // printf("%s\n",command);
+                    char* command_args[100];
+                    int command_arg_count=0;
+                    char* token=strtok(command," ");
+                    while(token!=NULL){
+                        command_args[command_arg_count]=token;
+                        command_arg_count++;
+                        token=strtok(NULL," ");
+                    }
+                    // printf("%s\n",command_args[0]);
+                    // replace 
+                    strcpy(args[0],command_args[0]);
+                    for(int k=1;k<command_arg_count;k++){
+                        strcpy(args[k],command_args[k]);
+                    }
+                    arg_count=command_arg_count;
+                    j--;
+                    continue;
+                }
+                else if(strcmp(args[1],"purge")==0){
+                    event_count=0;
+                    write_past_events(events,event_count,history_file_path);
+                    continue;
+                }
+                else 
+                    pastevents(args,arg_count,events,event_count,history_file_path);
+            }
+
+            // if not, add the event to the list of past events
+            if (strcmp(input, "pastevents") != 0) {
+                if (event_count == 0 || strcmp(events[event_count - 1], input) != 0) {
+                    add_event(input, events, &event_count, history_file_path);
+                    write_past_events(events, event_count, history_file_path);
+                }
+            }
+
             
         }
 

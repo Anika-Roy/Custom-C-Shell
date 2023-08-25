@@ -47,11 +47,13 @@ int peek(char *flags[], int flag_count, char *store_previous_directory, char *st
     if (strcmp(path_or_name, "-l") == 0 || strcmp(path_or_name, "-a") == 0 || strcmp(path_or_name, "-al") == 0 || strcmp(path_or_name, "-la") == 0 || strcmp(path_or_name, "peek") == 0)
     {
         // then path or name is current directory
-        path_or_name = store_calling_directory;
-    }
-    {
-        // then path or name is current directory
-        path_or_name = store_calling_directory;
+        // Get the current working directory
+        char cwd[1024];
+        if (getcwd(cwd, sizeof(cwd)) == NULL) {
+            perror("getcwd");
+            exit(EXIT_FAILURE);
+        }
+        path_or_name = cwd;
     }
 
     // check if the last argument is '-'
