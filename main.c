@@ -142,15 +142,24 @@ int main()
     int event_count=0;
     read_past_events(events, &event_count, history_file_path);
 
+    // print events for debugging
+    // for(int i=0;i<event_count;i++){
+    //     printf("%d->%s\n",i,events[i]);
+    // }
+
     while (1)
     {
         // Print appropriate prompt with username, systemname and directory before accepting input
         prompt(store_calling_directory);
         char input[4096];
         fgets(input, 4096, stdin);
-        
+
+        // Dclare a variable to store the original command, which we'll get by concatenating all tokens
+        char original_command[MAX_EVENT_LENGTH];
+        original_command[0]='\0';
 
         // tokenise the input --> store in tokens as structs (autocompleted by Copilot)
+        // remove empty tokens obtained at the end
         char *token = strtok(input, ";&\n");
         struct TokenWithDelimiter tokens[MAX_TOKENS];
         int i = 0;
@@ -162,11 +171,13 @@ int main()
             i++;
         }
 
+        // print the tokens for debugging
+        for (int j = 0; j < i; j++) {
+            printf("%d->%s%c\n",j, tokens[j].token, tokens[j].delimiter);
+        }
+
         // execute all tokens in a loop (autocompleted by Copilot)
         for (int j = 0; j < i; j++) {   
-            // Storing the original command before tokenizing
-            char original_command[MAX_EVENT_LENGTH];
-            strcpy(original_command, tokens[j].token);
 
             // Tokenize with all whitespaces (space and tab) to get command and arguments
             char *command = tokens[j].token;
@@ -186,6 +197,16 @@ int main()
             //     printf("%s ", args[k]);
             // }
             // printf("\n");
+
+            // Concatenate all tokens(and their arguments) to get the original command(along with delimiter)
+            if(strcmp(args[0],"pastevents")!=0){
+                strcat(original_command, args[0]);
+                for (int k = 1; k < arg_count; k++) {
+                    strcat(original_command, " ");
+                    strcat(original_command, args[k]);
+                }
+                strcat(original_command, &tokens[j].delimiter);
+            }
 
             // Now you have the command and its arguments in the args array
             if(strcmp(args[0],"exit")==0){
@@ -252,15 +273,18 @@ int main()
                 }
             }
 
-            // if not, add the event to the list of past events
-            if (strcmp(args[0], "pastevents") != 0) {
-                if (event_count == 0 || strcmp(events[event_count - 1], input) != 0) {
-                    // printf("%s\n", original_command);
-                    add_event(original_command, events, &event_count);
-                    write_past_events(events, event_count, history_file_path);
-                }
-            }
         }   
+        // if not, add the input to the list of past events
+        // also, if the original command contains the work 'pastevents'(apart from ), don't add it to the list
+        if (strstr(original_command,"pastevents")==NULL) {
+            // printf("reached here");
+            if (event_count == 0 || strcmp(events[event_count - 1], original_command) != 0) {
+                // printf("%s\n", original_command);
+                add_event(original_command, events, &event_count);
+                write_past_events(events, event_count, history_file_path);
+            }
+        }
+
     }
 
     return 0;
