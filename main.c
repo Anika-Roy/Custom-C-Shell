@@ -40,13 +40,13 @@ void remove_background_process(int index) {
         background_process_count--;
     }
 }
-void check_background_processes() {
+void check_background_processes_async() {
     for (int i = 0; i < background_process_count; i++) {
         pid_t pid = background_processes[i].pid;
         int status;
         pid_t result = waitpid(pid, &status, WNOHANG);
 
-        printf("result: %d\n",result);
+        // printf("result: %d\n",result);
         if (result == -1) {
             // An error occurred
             perror("waitpid");
@@ -74,14 +74,48 @@ void check_background_processes() {
     }
 }
 
-void print_background_processes(){
-    printf("Background Processes:\n");
-    
+void check_background_processes_sync() {
     for (int i = 0; i < background_process_count; i++) {
-        printf("PID: %d, Name: %s, Status: %s\n", 
-               background_processes[i].pid, 
-               background_processes[i].name, 
-               background_processes[i].status);
+        pid_t pid = background_processes[i].pid;
+        int status;
+        pid_t result = waitpid(pid, &status, WNOHANG);
+
+        // printf("result: %d\n",result);
+        if (result == -1) {
+            // An error occurred
+            // perror("waitpid");
+        } else if (result == 0) {
+            // The process is still running
+            continue;
+        } else {
+            // The process has exited
+            if (WIFEXITED(status)) {
+                // The process exited normally
+                // printf("%s (PID %d) exited normally with status %d\n", background_processes[i].name, pid, WEXITSTATUS(status));
+                // Update the status in your data structure
+                strcpy(background_processes[i].status, "Finished");
+                // remove_background_process(i);
+                // i--;
+            } else if (WIFSIGNALED(status)) {
+                // The process was terminated by a signal
+                printf("%s (PID %d) terminated abnormally by signal %d\n", background_processes[i].name, pid, WTERMSIG(status));
+                // Update the status in your data structure
+                strcpy(background_processes[i].status, "Failed");
+                // remove_background_process(i);
+                // i--;
+            }
+        }
+    }
+}
+
+
+void print_background_processes(){
+    for (int i = 0; i < background_process_count; i++) {
+        if(strcmp(background_processes[i].status,"Running")!=0)
+            printf("PID: %d, Name: %s, Status: %s\n", 
+                background_processes[i].pid, 
+                background_processes[i].name, 
+                background_processes[i].status);
     }
 }
 
@@ -94,9 +128,9 @@ void execute_background(char *args[]) {
         exit(EXIT_FAILURE);
     } else if (child_pid == 0) {
         // Child process
-        printf("args:\n");
-        for(int i=0 ; i<2 ; i++)
-            printf("%s\n",args[i]);
+        // printf("args:\n");
+        // for(int i=0 ; i<2 ; i++)
+        //     printf("%s\n",args[i]);
         execvp(args[0], args);
         perror("execvp"); // This will be executed only if execvp fails
         exit(EXIT_FAILURE);
@@ -107,9 +141,22 @@ void execute_background(char *args[]) {
         insert_background_process(child_pid, args[0]);
     }
 }
+void handle_signal(int signum) {
+    if (signum == SIGCHLD) {
+        check_background_processes_sync();
+        // check_background_processes_async();
+    }
+}
 
 int main()
 {
+    // Set up signal handler for SIGCHLD
+    struct sigaction sa;
+    sa.sa_handler = handle_signal;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+    sigaction(SIGCHLD, &sa, NULL);
+
     // Keep accepting commands
     char store_calling_directory[1024];
     getcwd(store_calling_directory, sizeof(store_calling_directory));
@@ -308,8 +355,8 @@ int main()
         }
 
         // Check if any background processes have completed
+        check_background_processes_sync();
         print_background_processes();
-        check_background_processes();
     }
 
     return 0;
