@@ -10,7 +10,9 @@
 #define MAX_EVENTS 15
 #define FILENAME "pastevents.txt"
 
-void add_event(const char *event, char events[][100], int *count, const char *history_file_path) {
+#define MAX_EVENT_LENGTH 1000
+
+void add_event(const char *event, char events[][MAX_EVENT_LENGTH], int *count) {
     if (*count >= MAX_EVENTS) {
         // Remove the oldest event
         for (int i = 1; i < MAX_EVENTS; i++) {
@@ -22,7 +24,7 @@ void add_event(const char *event, char events[][100], int *count, const char *hi
     (*count)++;
 }
 
-void read_past_events(char events[][100], int *count, const char *history_file_path) {
+void read_past_events(char events[][MAX_EVENT_LENGTH], int *count, const char *history_file_path) {
     FILE *file = fopen(history_file_path, "r");
     if (file != NULL) {
         *count = 0;
@@ -33,11 +35,11 @@ void read_past_events(char events[][100], int *count, const char *history_file_p
     }
 }
 
-void write_past_events(const char events[][100], int count, const char *history_file_path) {
+void write_past_events(const char events[][MAX_EVENT_LENGTH], int count, const char *history_file_path) {
     FILE *file = fopen(history_file_path, "w");
     if (file != NULL) {
         for (int i = 0; i < count; i++) {
-            fprintf(file, "%s", events[i]);
+            fprintf(file, "%s\n", events[i]);
         }
         fclose(file);
     }
@@ -136,7 +138,7 @@ int main()
     strcat(history_file_path, FILENAME);
 
     // Read past events from history_file_path
-    char events[MAX_EVENTS][100];
+    char events[MAX_EVENTS][MAX_EVENT_LENGTH];
     int event_count=0;
     read_past_events(events, &event_count, history_file_path);
 
@@ -161,7 +163,11 @@ int main()
         }
 
         // execute all tokens in a loop (autocompleted by Copilot)
-        for (int j = 0; j < i; j++) {
+        for (int j = 0; j < i; j++) {   
+            // Storing the original command before tokenizing
+            char original_command[MAX_EVENT_LENGTH];
+            strcpy(original_command, tokens[j].token);
+
             // Tokenize with all whitespaces (space and tab) to get command and arguments
             char *command = tokens[j].token;
             char *args[MAX_ARGS];
@@ -174,7 +180,7 @@ int main()
             }
 
             // print the command and arguments for debugging
-            // printf("Command: %s\n", args[0]);
+            // printf("Command: %s\n",100 args[0]);
             // printf("Arguments: \n");
             // for (int k = 1; k < arg_count; k++) {
             //     printf("%s ", args[k]);
@@ -198,7 +204,6 @@ int main()
                 peek(args, arg_count, store_previous_directory,store_calling_directory);
             }
 
-
             else if(strcmp(args[0],"pastevents")==0){
                 /*
                 if its pastevents execute <index>, 
@@ -206,7 +211,7 @@ int main()
                 decrement j and run the loop again
                 This way, we don't store it in the history and we can execute it
                 */ 
-                if(strcmp(args[1],"execute")==0){
+                if(arg_count>1 && strcmp(args[1],"execute")==0){
                     // args[2]="<index>"
                     int index=atoi(args[2]);
                     if(index>event_count){
@@ -233,32 +238,30 @@ int main()
                     j--;
                     continue;
                 }
-                else if(strcmp(args[1],"purge")==0){
+                else if(arg_count>1 && strcmp(args[1],"purge")==0){
                     event_count=0;
                     write_past_events(events,event_count,history_file_path);
                     continue;
                 }
-                else 
-                    pastevents(args,arg_count,events,event_count,history_file_path);
-            }
-
-            // if not, add the event to the list of past events
-            if (strcmp(input, "pastevents") != 0) {
-                if (event_count == 0 || strcmp(events[event_count - 1], input) != 0) {
-                    add_event(input, events, &event_count, history_file_path);
-                    write_past_events(events, event_count, history_file_path);
+                else {
+                    if(arg_count==1){
+                        for(int i=0;i<event_count;i++){
+                            printf("%s\n",events[i]);   
+                        }
+                    }
                 }
             }
 
-            
-        }
-
-        
-
-
-
-        
-
-
+            // if not, add the event to the list of past events
+            if (strcmp(args[0], "pastevents") != 0) {
+                if (event_count == 0 || strcmp(events[event_count - 1], input) != 0) {
+                    // printf("%s\n", original_command);
+                    add_event(original_command, events, &event_count);
+                    write_past_events(events, event_count, history_file_path);
+                }
+            }
+        }   
     }
+
+    return 0;
 }

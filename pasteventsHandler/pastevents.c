@@ -23,12 +23,12 @@ void pastevents(char* args[],int arg_count, char* events[],int event_count,char*
     // args[0]="pastevents"
 
     // just pastevents
-    if(arg_count==1){
-        for(int i=0;i<event_count;i++){
-            printf("%s\n",events[i]);
-        }
-        return;
-    }
+    // if(arg_count==1){
+    //     for(int i=0;i<event_count;i++){
+    //         printf("%s\n",events[i]);
+    //     }
+    //     return;
+    // }
     // // pastevents purge
     // if(strcmp(args[1],"purge")==0){
     //     event_count=0;
