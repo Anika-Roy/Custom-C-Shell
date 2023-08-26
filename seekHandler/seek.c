@@ -1,6 +1,6 @@
 #include "seek.h"
 
-void seek_file(const char *search, const char *target_dir,int* file_count) {
+void seek_file(const char *search, const char *target_dir,int* file_count, int target_length) {
     // obtained from ChatGPT
     DIR *dir = opendir(target_dir);
     if (dir == NULL) {
@@ -17,16 +17,29 @@ void seek_file(const char *search, const char *target_dir,int* file_count) {
 
             char sub_dir_path[1024];
             snprintf(sub_dir_path, sizeof(sub_dir_path), "%s/%s", target_dir, entry->d_name);
-            seek_file(search, sub_dir_path,file_count); // Recursively search subdirectories
-        }  else if (entry->d_type == DT_REG && strcmp(entry->d_name, search) == 0) {
-            printf("%s/%s\n", target_dir, entry->d_name);
-            (*file_count)++;
+            seek_file(search, sub_dir_path,file_count,target_length); // Recursively search subdirectories
+        }  else if (entry->d_type == DT_REG) {
+            // replace '.' character with '\0' character if present
+            char *dot = strchr(entry->d_name, '.');
+
+            if (dot != NULL) {
+                *dot = '\0';
+            }
+            if(strcmp(entry->d_name,search)==0){
+                // replace the '\0' character with '.' character
+                if (dot != NULL) {
+                    *dot = '.';
+                }
+                printf("%s.%s/%s%s\n", ANSI_COLOR_GREEN,&target_dir[target_length], entry->d_name , ANSI_COLOR_RESET);
+                // printf(".%s/%s\n",&target_dir[target_length], entry->d_name);
+                (*file_count)++;
+            }
         }
     }
     closedir(dir);
 }
 
-void seek_directory(const char *search, const char *target_dir,int* dir_count) {
+void seek_directory(const char *search, const char *target_dir,int* dir_count,int target_length) {
     // obtained from ChatGPT
     DIR *dir = opendir(target_dir);
     if (dir == NULL) {
@@ -44,10 +57,11 @@ void seek_directory(const char *search, const char *target_dir,int* dir_count) {
             char sub_dir_path[1024];
             snprintf(sub_dir_path, sizeof(sub_dir_path), "%s/%s", target_dir, entry->d_name);
             if (strcmp(entry->d_name, search) == 0) {
-                printf("%s/\n", sub_dir_path);
+                printf("%s.%s/%s\n", ANSI_COLOR_BLUE, &sub_dir_path[target_length], ANSI_COLOR_RESET);
+                // printf(".%s/\n", &sub_dir_path[target_length]);
                 (*dir_count)++;
             }
-            seek_directory(search, sub_dir_path,dir_count); // Recursively search subdirectories
+            seek_directory(search, sub_dir_path,dir_count,target_length); // Recursively search subdirectories
         }
     }
     closedir(dir);
@@ -88,22 +102,23 @@ void seek(char* args[], int arg_count, char *store_calling_directory) {
     else
         target_dir= args[flag_count+2];
     
+    int target_length=strlen(target_dir);
 
     int file_count = 0;
     int dir_count = 0;
 
     // if -d is 1, search for directory
     if(d==1){
-        seek_directory(search,target_dir,&dir_count);
+        seek_directory(search,target_dir,&dir_count,target_length);
     }
     // if -f is 1, search for file
     else if(f==1){
-        seek_file(search,target_dir,&file_count);
+        seek_file(search,target_dir,&file_count,target_length);
     }
     // if flag count is 0, search for both
     else if(flag_count==0 || e==1){
-        seek_directory(search,target_dir,&dir_count);
-        seek_file(search,target_dir,&file_count);
+        seek_directory(search,target_dir,&dir_count,target_length);
+        seek_file(search,target_dir,&file_count,target_length);
     }
     if(e==1){
         /*
@@ -131,6 +146,7 @@ void seek(char* args[], int arg_count, char *store_calling_directory) {
                 printf("Missing permissions for task!\n");
                 return;
             }
+            // printf("%s\n",search);
             while((ch=fgetc(fp))!=EOF){
                 printf("%c",ch);
             }
