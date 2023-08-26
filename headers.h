@@ -11,6 +11,8 @@
 #define MAX_EVENT_LENGTH 1000
 #define MAX_COMMAND_LENGTH 100
 
+#define MAX_PATH_LENGTH 1024
+
 struct TokenWithDelimiter {
     char token[MAX_COMMAND_LENGTH];
     char delimiter; // Stores either ';' or '&'

@@ -1,6 +1,5 @@
 #include "../headers.h"
 #include "warp.h"
-#define MAX_LENGTH 1024
 
 void warp(char *args[], int count, char *store_calling_directory, char* previous_directory) {
     /*
@@ -34,7 +33,7 @@ void warp(char *args[], int count, char *store_calling_directory, char* previous
             
             // If the first letter of the argument is ~, replace with the home directory
             if (args[i][0] == '~') {
-                char new_path[MAX_LENGTH];
+                char new_path[MAX_PATH_LENGTH];
                 new_path[0] = '\0';// empty string
                 strcpy(new_path, store_calling_directory);
                 strcat(new_path, args[i] + 1);
