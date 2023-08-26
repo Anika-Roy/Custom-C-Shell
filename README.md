@@ -2,3 +2,4 @@
 # Description
 
 # Assumptions
+1. When the ~ flag is used in warp, it'll be used as the first letter only

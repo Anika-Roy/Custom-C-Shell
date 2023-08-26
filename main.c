@@ -157,9 +157,12 @@ void execute_background(char *args[]) {
         exit(EXIT_FAILURE);
     } else {
         // Parent process
-        printf("Background process '%s' started with PID %d\n", args[0], child_pid);
+
         // Store child_pid in your data structure for background processes
         insert_background_process(child_pid, args[0]);
+
+        printf("[%d] %d\n", background_process_count, child_pid);
+        
     }
 }
 
@@ -293,19 +296,16 @@ int main()
 
                 // If the command is warp, call the warp function
                 else if (strcmp(args[0], "warp") == 0) {
-                    //check for delimiter[TODO]
                     warp(args, arg_count, store_calling_directory, store_previous_directory);
                 }
 
                 // If the command is peek, call the peek function
                 else if (strcmp(args[0], "peek") == 0) {
-                    //check for delimiter[TODO]
                     peek(args, arg_count, store_previous_directory,store_calling_directory);
                 }
 
                 // If the command is seek, call the seek function
                 else if (strcmp(args[0], "seek") == 0) {
-                    //check for delimiter[TODO]
                     seek(args, arg_count,store_calling_directory);
                 }
 
@@ -361,12 +361,14 @@ int main()
 
                 else{
                     // execute using execvp
-                    execvp(args[0], args);
+                    int error_flag = execvp(args[0], args);
+                    // if error occurs, print error
+                    if (error_flag == -1) {
+                        printf("ERROR : '%s' is not a valid command\n",args[0]);
+                    }
                 }
 
                 //---------------------------------------------------------------------------------
-                // perror("here execvp"); // This will be executed only if execvp fails
-                // exit(EXIT_FAILURE);
             } else {
                 // Parent process
                 time_t start_time = time(NULL);

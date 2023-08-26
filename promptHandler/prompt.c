@@ -30,6 +30,20 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
         command = strtok(NULL, ";&\n");
     }
 
+    // check if the last token has only whitespaces
+    // if yes, then decrement command_count
+    int last_token_length = strlen(tokens[command_count - 1].token);
+    int last_token_is_whitespace = 1;
+    for (int i = 0; i < last_token_length; i++) {
+        if (tokens[command_count - 1].token[i] != ' ' && tokens[command_count - 1].token[i] != '\t') {
+            last_token_is_whitespace = 0;
+            break;
+        }
+    }
+    if (last_token_is_whitespace) {
+        command_count--;
+    }
+
     // now using the original input string, get the corresponding delimiter in tokens[i].delimiter
     // compare the tokens and skip whitespaces to find the delimiter
     // if the token is the last token, then the delimiter is ;

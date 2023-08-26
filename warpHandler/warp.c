@@ -2,19 +2,14 @@
 #include "warp.h"
 #define MAX_LENGTH 1024
 
-/*
-‘warp’ command changes the directory that the shell is currently in. It should also print the full path of working directory after changing. The directory path/name can be provided as argument to this command.
-
-You are also expected to implement the “.”, “..”, “~”, and “-” flags in warp. ~ represents the home directory of shell (refer to specification 1).
-You should support both absolute and relative paths, along with paths from home directory.
-If more than one argument is present, execute warp sequentially with all of them being the argument one by one (from left to right).
-If no argument is present, then warp into the home directory.
-*/
-
 void warp(char *args[], int count, char *store_calling_directory, char* previous_directory) {
+    /*
+    Github copilot gave the basic structure and auto-completed error handling
+    Things like printing working directory and changing previous directory were done by me
+    */
 
     // printf("%s\n", store_calling_directory);
-    if(count>1 && strcmp(args[1],"-")!=0){
+    if(count>1 && strcmp(args[1],"-")!=0 || count==1){
         // store the current directory as the previous directory
         char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) == NULL) {
@@ -36,11 +31,14 @@ void warp(char *args[], int count, char *store_calling_directory, char* previous
     else {
         // If more than one argument is present, execute warp sequentially with all of them being the argument one by one (from left to right)
         for (int i = 1; i < count; i++) {
-            // printf("%d\n", i);
-            // printf("%s\n", args[i]);
-            // If the argument is ~, warp into the home directory
-            if (strcmp(args[i], "~") == 0) {
-                if (chdir(store_calling_directory) != 0) {
+            
+            // If the first letter of the argument is ~, replace with the home directory
+            if (args[i][0] == '~') {
+                char new_path[MAX_LENGTH];
+                new_path[0] = '\0';// empty string
+                strcpy(new_path, store_calling_directory);
+                strcat(new_path, args[i] + 1);
+                if (chdir(new_path) != 0) {
                     perror("chdir");
                     exit(EXIT_FAILURE);
                 }
@@ -63,16 +61,14 @@ void warp(char *args[], int count, char *store_calling_directory, char* previous
                     exit(EXIT_FAILURE);
                 }
             }
-            // If the argument is neither of the above, warp into the directory
+            // If the argument is neither of the above, warp into the mentioned directory
             else {
                 if (chdir(args[i]) != 0) {
                     perror("chdir");
                     exit(EXIT_FAILURE);
                 }
             }
-
-            
-            
+  
         }
     }
     // Get the current working directory
