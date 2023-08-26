@@ -13,8 +13,7 @@ Absolute path of a directory/file must be shown when outside the home directory.
 
 */
 int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
-    // tokenise the input --> store in tokens as structs (autocompleted by Copilot)
-    // reference from linux manpages
+    // After a lot of trial and error, discussed with Ujjwal Shekhar(2021113009)
  
     // Tokenize with all whitespaces (space and tab) to get command and arguments
 
