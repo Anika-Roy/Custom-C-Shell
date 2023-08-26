@@ -116,7 +116,7 @@ void seek(char* args[], int arg_count, char *store_calling_directory) {
         seek_file(search,target_dir,&file_count,target_length);
     }
     // if flag count is 0, search for both
-    else if(flag_count==0 || e==1){
+    else if(flag_count==0 || (e==1 && flag_count==1)){
         seek_directory(search,target_dir,&dir_count,target_length);
         seek_file(search,target_dir,&file_count,target_length);
     }
@@ -141,7 +141,14 @@ void seek(char* args[], int arg_count, char *store_calling_directory) {
             // print the contents of the file
             FILE *fp;
             char ch;
-            fp = fopen(search,"r");
+
+            // get path of the file
+            char path[1024];
+            strcpy(path,target_dir);
+            strcat(path,"/");
+            strcat(path,search);
+
+            fp = fopen(path,"r");
             if(fp==NULL){
                 printf("Missing permissions for task!\n");
                 return;
