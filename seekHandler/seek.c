@@ -18,7 +18,7 @@ void seek_file(const char *search, const char *target_dir,int* file_count) {
             char sub_dir_path[1024];
             snprintf(sub_dir_path, sizeof(sub_dir_path), "%s/%s", target_dir, entry->d_name);
             seek_file(search, sub_dir_path,file_count); // Recursively search subdirectories
-        } else if (entry->d_type == DT_REG && strcmp(entry->d_name, search) == 0) {
+        }  else if (entry->d_type == DT_REG && strcmp(entry->d_name, search) == 0) {
             printf("%s/%s\n", target_dir, entry->d_name);
             (*file_count)++;
         }
@@ -101,7 +101,7 @@ void seek(char* args[], int arg_count, char *store_calling_directory) {
         seek_file(search,target_dir,&file_count);
     }
     // if flag count is 0, search for both
-    else if(flag_count==0){
+    else if(flag_count==0 || e==1){
         seek_directory(search,target_dir,&dir_count);
         seek_file(search,target_dir,&file_count);
     }
@@ -122,7 +122,19 @@ void seek(char* args[], int arg_count, char *store_calling_directory) {
         }
         else if(dir_count==0 && file_count==1){
             // print it's output
-            printf("%s\n",search);
+            // printf("%s\n",search);
+            // print the contents of the file
+            FILE *fp;
+            char ch;
+            fp = fopen(search,"r");
+            if(fp==NULL){
+                printf("Missing permissions for task!\n");
+                return;
+            }
+            while((ch=fgetc(fp))!=EOF){
+                printf("%c",ch);
+            }
+            fclose(fp);
         }
         else{
             // do nothing

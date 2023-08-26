@@ -202,7 +202,7 @@ int main()
     while (1)
     {
         // Print appropriate prompt with username, systemname and directory before accepting input
-        prompt(store_calling_directory,0);
+        prompt(store_calling_directory);
         char input[4096];
         fgets(input, 4096, stdin);
 
@@ -371,7 +371,6 @@ int main()
                 
                 if (end_time - start_time > 2) {
                     printf("Foreground process '%s' took %lds\n", args[0], (long)(end_time - start_time));
-                    prompt(store_calling_directory,(long)(end_time - start_time));
                 }
             }
             
