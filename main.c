@@ -59,14 +59,14 @@ void check_background_processes_async() {
             // The process has exited
             if (WIFEXITED(status)) {
                 // The process exited normally
-                printf("%s (PID %d) exited normally with status %d\n", background_processes[i].name, pid, WEXITSTATUS(status));
+                // printf("%s (PID %d) exited normally with status %d\n", background_processes[i].name, pid, WEXITSTATUS(status));
                 // Update the status in your data structure
                 strcpy(background_processes[i].status, "Finished");
                 remove_background_process(i);
                 i--;
             } else if (WIFSIGNALED(status)) {
                 // The process was terminated by a signal
-                printf("%s (PID %d) terminated abnormally by signal %d\n", background_processes[i].name, pid, WTERMSIG(status));
+                // printf("%s (PID %d) terminated abnormally by signal %d\n", background_processes[i].name, pid, WTERMSIG(status));
                 // Update the status in your data structure
                 strcpy(background_processes[i].status, "Failed");
                 remove_background_process(i);
@@ -113,16 +113,20 @@ void check_background_processes_sync() {
 
 void print_background_processes(){
     for (int i = 0; i < background_process_count; i++) {
-        if(strcmp(background_processes[i].status,"Running")!=0)
-            printf("PID: %d, Name: %s, Status: %s\n", 
-                background_processes[i].pid, 
-                background_processes[i].name, 
-                background_processes[i].status);
+        if(strcmp(background_processes[i].status,"Running")!=0){
+            if(strcmp(background_processes[i].status,"Finished")==0)
+                printf("%s (PID %d) exited normally\n", background_processes[i].name, background_processes[i].pid);
+            else if(strcmp(background_processes[i].status,"Failed")==0)
+                printf("%s (PID %d) terminated abnormally\n", background_processes[i].name, background_processes[i].pid);
+            
+            remove_background_process(i);
+            i--;
+        }
     }
 }
 
-
 void execute_background(char *args[]) {
+    // taken from ChatGPT
     pid_t child_pid = fork();
 
     if (child_pid < 0) {
@@ -130,9 +134,24 @@ void execute_background(char *args[]) {
         exit(EXIT_FAILURE);
     } else if (child_pid == 0) {
         // Child process
-        // printf("args:\n");
-        // for(int i=0 ; i<2 ; i++)
-        //     printf("%s\n",args[i]);
+        // Create a new session and detach from terminal
+        if (setsid() == -1) {
+            perror("setsid");
+            exit(EXIT_FAILURE);
+        }
+
+        // Redirect standard input, output, and error to /dev/null
+        int dev_null = open("/dev/null", O_RDWR);
+        if (dev_null == -1) {
+            perror("open");
+            exit(EXIT_FAILURE);
+        }
+        dup2(dev_null, STDIN_FILENO);
+        dup2(dev_null, STDOUT_FILENO);
+        dup2(dev_null, STDERR_FILENO);
+        close(dev_null);
+
+        // Execute the command using execvp
         execvp(args[0], args);
         perror("execvp"); // This will be executed only if execvp fails
         exit(EXIT_FAILURE);
@@ -143,6 +162,7 @@ void execute_background(char *args[]) {
         insert_background_process(child_pid, args[0]);
     }
 }
+
 void handle_signal(int signum) {
     if (signum == SIGCHLD) {
         check_background_processes_sync();
@@ -224,6 +244,14 @@ int main()
                 }   
             }
             execute=0;
+
+            // print all tokens and args for debugging
+            // printf("Delimiter: %c\n", tokens[j].delimiter);
+            // printf("Command: %s\n", args[0]);
+            // printf("Arguments:\n");
+            // for (int k = 1; k < arg_count; k++) {
+            //     printf("%s\n", args[k]);
+            // }
 
             // Concatenate all tokens(and their arguments) to get the original command(along with delimiter)
             if(strcmp(args[0],"pastevents")!=0){
