@@ -5,13 +5,6 @@
 #include "pasteventsHandler/pastevents.h"
 #include "seekHandler/seek.h"
 
-#define MAX_PROCESSES 100
-
-struct BackgroundProcess {
-    pid_t pid;
-    char name[MAX_COMMAND_LENGTH];
-    char status[10];
-};
 // Data structure to store background processes using array
 struct BackgroundProcess background_processes[MAX_PROCESSES];
 int background_process_count = 0;
@@ -209,7 +202,7 @@ int main()
     while (1)
     {
         // Print appropriate prompt with username, systemname and directory before accepting input
-        prompt(store_calling_directory);
+        prompt(store_calling_directory,0);
         char input[4096];
         fgets(input, 4096, stdin);
 
@@ -378,6 +371,7 @@ int main()
                 
                 if (end_time - start_time > 2) {
                     printf("Foreground process '%s' took %lds\n", args[0], (long)(end_time - start_time));
+                    prompt(store_calling_directory,(long)(end_time - start_time));
                 }
             }
             

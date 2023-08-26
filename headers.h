@@ -13,6 +13,14 @@
 
 #define MAX_PATH_LENGTH 1024
 
+#define MAX_PROCESSES 100
+
+struct BackgroundProcess {
+    pid_t pid;
+    char name[MAX_COMMAND_LENGTH];
+    char status[10];
+};
+
 struct TokenWithDelimiter {
     char token[MAX_COMMAND_LENGTH];
     char delimiter; // Stores either ';' or '&'

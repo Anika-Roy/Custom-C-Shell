@@ -136,7 +136,7 @@ int peek(char *flags[], int flag_count, char *store_previous_directory, char *st
                     if (show_details)
                     {
                         printf("%s%s%s ", color_code, dir->d_name, ANSI_COLOR_RESET);
-                        print_file_details(dir->d_name);
+                        print_file_details(full_path);
                     }
                     else 
                         printf("%s%s%s\n", color_code, dir->d_name, ANSI_COLOR_RESET);

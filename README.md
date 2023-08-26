@@ -3,3 +3,5 @@
 
 # Assumptions
 1. When the ~ flag is used in warp, it'll be used as the first letter only
+2. Handling background processes in pastevents: All background events are stored in pastevents
+3. 

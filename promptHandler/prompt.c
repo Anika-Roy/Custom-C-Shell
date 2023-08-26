@@ -73,7 +73,7 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
     return command_count;
 }
 
-void prompt(char *store_calling_directory) {
+void prompt(char *store_calling_directory, long time_taken) {
     /* 
     ChatGPT and Copilot usage: error handling and import libraries
     */
@@ -98,13 +98,25 @@ void prompt(char *store_calling_directory) {
     }
 
     //show the relative path from the home directory (autocompleted by Copilot)
-    if (strstr(cwd, store_calling_directory) != NULL) {
-        char *relative_path = strstr(cwd, store_calling_directory);
-        // printf("%s\n", relative_path);
-        printf("<%s@%s:~%s> ", username, hostname, relative_path + strlen(store_calling_directory));
+    if(time_taken==0){
+        if (strstr(cwd, store_calling_directory) != NULL) {
+            char *relative_path = strstr(cwd, store_calling_directory);
+            // printf("%s\n", relative_path);
+            printf("<%s@%s:~%s> ", username, hostname, relative_path + strlen(store_calling_directory));
+        }
+        else{
+            printf("<%s@%s:%s> ", username, hostname, cwd);
+        }
     }
     else{
-        printf("<%s@%s:%s> ", username, hostname, cwd);
+        if (strstr(cwd, store_calling_directory) != NULL) {
+            char *relative_path = strstr(cwd, store_calling_directory);
+            // printf("%s\n", relative_path);
+            printf("<%s@%s:~%s> ", username, hostname, relative_path + strlen(store_calling_directory));
+        }
+        else{
+            printf("<%s@%s:%s> ", username, hostname, cwd);
+        }
     }
 
 }
