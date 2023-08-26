@@ -338,7 +338,7 @@ int main()
 
                 //---------------------------------------------------------------------------------
                 // perror("here execvp"); // This will be executed only if execvp fails
-                exit(EXIT_FAILURE);
+                // exit(EXIT_FAILURE);
             } else {
                 // Parent process
                 time_t start_time = time(NULL);

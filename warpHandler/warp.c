@@ -36,7 +36,7 @@ void warp(char *args[], int count, char *store_calling_directory, char* previous
     else {
         // If more than one argument is present, execute warp sequentially with all of them being the argument one by one (from left to right)
         for (int i = 1; i < count; i++) {
-
+            // printf("%d\n", i);
             // printf("%s\n", args[i]);
             // If the argument is ~, warp into the home directory
             if (strcmp(args[i], "~") == 0) {
@@ -71,16 +71,18 @@ void warp(char *args[], int count, char *store_calling_directory, char* previous
                 }
             }
 
-            // Get the current working directory
-            char cwd[1024];
-            if (getcwd(cwd, sizeof(cwd)) == NULL) {
-                perror("getcwd");
-                exit(EXIT_FAILURE);
-            }
-
-            // Print the current working directory
-            printf("%s\n", cwd);
+            
+            
         }
     }
+    // Get the current working directory
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) == NULL) {
+        perror("getcwd");
+        exit(EXIT_FAILURE);
+    }
+    // Print the current working directory
+    printf("%s\n", cwd);
+    return;
 
 }

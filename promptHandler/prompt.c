@@ -86,6 +86,7 @@ void prompt(char *store_calling_directory) {
     //show the relative path from the home directory (autocompleted by Copilot)
     if (strstr(cwd, store_calling_directory) != NULL) {
         char *relative_path = strstr(cwd, store_calling_directory);
+        // printf("%s\n", relative_path);
         printf("<%s@%s:~%s> ", username, hostname, relative_path + strlen(store_calling_directory));
     }
     else{

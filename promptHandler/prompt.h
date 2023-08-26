@@ -6,7 +6,7 @@
 #include "../headers.h"
 #include <ctype.h>
 
-void prompt();
+void prompt(char *store_calling_directory);
 int tokeniser(struct TokenWithDelimiter[], char[]);
 
 #endif
