@@ -3,6 +3,10 @@
 
 # include "../headers.h"
 # include <dirent.h>
-void seek();
+#include <sys/stat.h>
+void seek(char* args[], int arg_count, char *store_calling_directory);
+void seek_file(const char *search, const char *target_dir);
+void seek_directory(const char *search, const char *target_dir);
+
 
 #endif

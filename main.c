@@ -3,6 +3,8 @@
 #include "warpHandler/warp.h"
 #include "peekHandler/peek.h"
 #include "pasteventsHandler/pastevents.h"
+#include "seekHandler/seek.h"
+
 #define MAX_PROCESSES 100
 
 struct BackgroundProcess {
@@ -276,7 +278,7 @@ int main()
                 // If the command is seek, call the seek function
                 else if (strcmp(args[0], "seek") == 0) {
                     //check for delimiter[TODO]
-                    peek(args, arg_count,store_calling_directory);
+                    seek(args, arg_count,store_calling_directory);
                 }
 
                 else if(strcmp(args[0],"pastevents")==0){
@@ -335,7 +337,7 @@ int main()
                 }
 
                 //---------------------------------------------------------------------------------
-                perror("execvp"); // This will be executed only if execvp fails
+                // perror("here execvp"); // This will be executed only if execvp fails
                 exit(EXIT_FAILURE);
             } else {
                 // Parent process

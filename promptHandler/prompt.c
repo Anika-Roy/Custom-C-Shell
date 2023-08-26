@@ -47,7 +47,7 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
     // printf("%d\n",j);
     //Check if the last token is a newline:
     // if it is, decrement j by 1 and return
-    if(tokens[j-1].token[0]=='\n')
+    if(isspace(tokens[j-1].token[0]))
         j--;
 
     // printf("%d\n",j);

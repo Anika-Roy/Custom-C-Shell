@@ -10,7 +10,15 @@ void seek_file(const char *search, const char *target_dir) {
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_REG && strcmp(entry->d_name, search) == 0) {
+        if (entry->d_type == DT_DIR) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+
+            char sub_dir_path[1024];
+            snprintf(sub_dir_path, sizeof(sub_dir_path), "%s/%s", target_dir, entry->d_name);
+            seek_file(search, sub_dir_path); // Recursively search subdirectories
+        } else if (entry->d_type == DT_REG && strcmp(entry->d_name, search) == 0) {
             printf("%s/%s\n", target_dir, entry->d_name);
         }
     }
@@ -27,46 +35,57 @@ void seek_directory(const char *search, const char *target_dir) {
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_DIR && strcmp(entry->d_name, search) == 0) {
-            printf("%s/%s/\n", target_dir, entry->d_name);
+        if (entry->d_type == DT_DIR) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+
+            char sub_dir_path[1024];
+            snprintf(sub_dir_path, sizeof(sub_dir_path), "%s/%s", target_dir, entry->d_name);
+            if (strcmp(entry->d_name, search) == 0) {
+                printf("%s/\n", sub_dir_path);
+            }
+            seek_directory(search, sub_dir_path); // Recursively search subdirectories
         }
     }
     closedir(dir);
 }
 
-void seek(char* args, int arg_count) {
+void seek(char* args[], int arg_count, char *store_calling_directory) {
     // obtained from ChatGPT
-    if (arg_count < 3 || arg_count > 4) {
-        printf("Usage: %s <flags> <search> [<target_directory>]\n", args[0]);
-        return 1;
+    
+    // Handle flags -- iterate through the flags and check if -d, -f or -e exist
+    // the next argument after flags would be search
+
+    int d=0,f=0,e=0;
+    for(int i=0;i<arg_count;i++){
+        if(strcmp(args[i],"-d")==0)
+            d=1;
+        else if(strcmp(args[i],"-f")==0)
+            f=1;
+        else if(strcmp(args[i],"-e")==0)
+            e=1;
     }
 
-    int flags = 0; // 0: no flag, 1: -d, 2: -f, 3: -e
-    char *search = args[2];
-    char *target_dir = (arg_count == 4) ? args[3] : ".";
-
-    if (arg_count == 4 && access(target_dir, F_OK) == -1) {
-        printf("Target directory does not exist\n");
-        return 1;
+    // if -d and -f are both one, print error
+    if(d==1 && f==1){
+        printf("Invalid flags\n");
+        return;
     }
 
-    for (int i = 1; i < strlen(args[1]); i++) {
-        if (args[1][i] == 'd') {
-            flags |= 1;
-        } else if (args[1][i] == 'f') {
-            flags |= 2;
-        } else if (args[1][i] == 'e') {
-            flags |= 3;
-        } else {
-            printf("Invalid flag: %c\n", args[1][i]);
-            return ;
-        }
-    }
+    int flag_count=d+e+f;
 
-    if ((flags & 1) && (flags & 2)) {
-        printf("Invalid flags!\n");
-        return 1;
+    // get search and target_dir
+    char *search = args[flag_count+1];
+
+    // if no target directory is specified, search in current directory
+    char *target_dir;
+    if(flag_count+2==arg_count){
+        target_dir=".";
     }
+    else
+        target_dir= args[flag_count+2];
+    
 
     int file_count = 0;
     int dir_count = 0;
@@ -74,54 +93,32 @@ void seek(char* args, int arg_count) {
     DIR *dir = opendir(target_dir);
     if (dir == NULL) {
         perror("opendir");
-        return 1;
+        return;
     }
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        if ((flags & 1) && entry->d_type != DT_DIR) {
-            continue;
-        }
-        if ((flags & 2) && entry->d_type != DT_REG) {
-            continue;
-        }
-        if (strcmp(entry->d_name, search) == 0) {
-            if (entry->d_type == DT_REG) {
-                file_count++;
-            } else if (entry->d_type == DT_DIR) {
-                dir_count++;
-            }
+        if (entry->d_type == DT_REG) {
+            file_count++;
+        } else if (entry->d_type == DT_DIR) {
+            dir_count++;
         }
     }
     closedir(dir);
 
-    if (dir_count + file_count == 1) {
-        if (flags & 3) {
-            if (file_count == 1) {
-                char full_path[1024];
-                snprintf(full_path, sizeof(full_path), "%s/%s", target_dir, search);
-                FILE *file = fopen(full_path, "r");
-                if (file) {
-                    char line[1024];
-                    while (fgets(line, sizeof(line), file)) {
-                        printf("%s", line);
-                    }
-                    fclose(file);
-                } else {
-                    printf("Missing permissions for task!\n");
-                }
-            } else if (dir_count == 1) {
-                chdir(target_dir);
-            }
-        } else {
-            seek_file(search, target_dir);
-            seek_directory(search, target_dir);
-        }
-    } else if (dir_count + file_count > 1) {
-        seek_file(search, target_dir);
-        seek_directory(search, target_dir);
-    } else {
-        printf("No match found!\n");
+
+    // if -d is 1, search for directory
+    if(d==1){
+        seek_directory(search,target_dir);
+    }
+    // if -f is 1, search for file
+    else if(f==1){
+        seek_file(search,target_dir);
+    }
+    // if -e is 1, search for both
+    else if(e==1 || flag_count==0){
+        seek_directory(search,target_dir);
+        seek_file(search,target_dir);
     }
 
     return;
