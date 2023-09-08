@@ -4,6 +4,7 @@
 #include "peekHandler/peek.h"
 #include "pasteventsHandler/pastevents.h"
 #include "seekHandler/seek.h"
+#include "activitiesHandler/activities.h"
 
 // Data structure to store background processes using array
 struct BackgroundProcess background_processes[MAX_PROCESSES];
@@ -295,6 +296,10 @@ int main()
                 // If the command is peek, call the peek function
                 else if (strcmp(args[0], "peek") == 0) {
                     peek(args, arg_count, store_previous_directory,store_calling_directory);
+                }
+
+                else if(strcmp(args[0], "activities") == 0){
+                    activities(background_processes,background_process_count);
                 }
 
                 // If the command is seek, call the seek function
