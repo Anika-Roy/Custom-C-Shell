@@ -97,6 +97,10 @@ void check_background_processes_sync() {
                 printf("signaled:%s\n",background_processes[i].name);
                 strcpy(background_processes[i].status, "Failed/Stopped");
             }
+            else if(WIFSTOPPED(status)){
+                printf("stopped:%s\n",background_processes[i].name);
+                strcpy(background_processes[i].status, "Stopped");
+            }
         }
     }
 }
