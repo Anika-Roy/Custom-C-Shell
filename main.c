@@ -244,6 +244,20 @@ int main()
                 }
                 strcpy(tokens_pastevents[j].token,events[index-1]);
             }
+
+            else{
+                // concatenate the tokenised arguemnets to get the minimal token
+                char minimal_token[MAX_EVENT_LENGTH];
+                minimal_token[0]='\0';
+                for(int k=0;k<arg_count;k++){
+                    strcat(minimal_token,args[k]);
+                    if(k<arg_count-1)
+                        strcat(minimal_token," ");
+                }
+
+                // copy the minimal token to the tokenised token
+                strcpy(tokens_pastevents[j].token,minimal_token);
+            }
         }
 
         // Concatenate all tokens(and their arguments) to get the original command(along with delimiter)
@@ -257,6 +271,9 @@ int main()
             if(j<i-1)
                 strcat(original_command, &delimiter);
         }
+
+        // print the original command
+        printf("original command: %s\n",original_command);
 
        // declare array of structs to store tokens and their delimiters
         struct TokenWithDelimiter tokens[MAX_TOKENS];
