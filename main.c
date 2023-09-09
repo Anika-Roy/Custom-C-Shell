@@ -166,13 +166,25 @@ void execute_background(char *args[]) {
 }
 
 void handle_signal(int signum) {
-    printf("reached");
-    // print the background processes table
-    for(int i=0 ;i<background_process_count;i++){
-        printf("[%d] %d %s\n",i+1,background_processes[i].pid,background_processes[i].name);
+    switch (signum) {
+        case SIGCHLD:
+            // Handle child process terminated (SIGCHLD)
+            // Add your handling code here
+            check_background_processes_sync();
+            break;
+        case SIGINT:
+            // Handle Ctrl+C (SIGINT) - Terminate or interrupt a process
+            // Add your handling code here
+            break;
+        case SIGTSTP:
+            // Handle Ctrl+Z (SIGTSTP) - Suspend a process
+            // Add your handling code here
+            break;
+        // Add cases for other signals you want to handle
+        default:
+            // Handle other signals as needed
+            break;
     }
-    if(signum==SIGCHLD)
-        check_background_processes_sync();
 }
 
 int main()
@@ -181,8 +193,12 @@ int main()
     struct sigaction sa;
     sa.sa_handler = handle_signal;
     sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
-    sigaction(SIGCHLD, &sa, NULL);
+    sa.sa_flags = SA_RESTART;
+
+    // Set up signal handlers for specific signals
+    sigaction(SIGINT, &sa, NULL);  // Handle Ctrl+C (SIGINT)
+    sigaction(SIGCHLD, &sa, NULL); // Handle child process terminated (SIGCHLD)
+    // sigaction(SIGTSTP, &sa, NULL); // Handle Ctrl+Z (SIGTSTP)
 
     // Keep accepting commands
     char store_calling_directory[1024];
@@ -335,10 +351,6 @@ int main()
                 // If the command is peek, call the peek function
                 else if (strcmp(args[0], "peek") == 0) {
                     peek(args, arg_count, store_previous_directory,store_calling_directory);
-                }
-
-                else if(strcmp(args[0], "activities") == 0){
-                    activities(background_processes,background_process_count);
                 }
 
                 // If the command is seek, call the seek function
