@@ -3,6 +3,6 @@
 
 #include "../headers.h"
 
-void ping();
+void ping(pid_t pid, int signal_number);
 
 #endif

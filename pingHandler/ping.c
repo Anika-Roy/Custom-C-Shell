@@ -5,7 +5,8 @@ void ping(pid_t pid, int signal_number){
     // Check if the process with the specified PID exists
     if (kill(pid, 0) == -1) {
         printf("No such process found\n");
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
+        return;
     }
 
     signal_number = signal_number % 32;
@@ -17,5 +18,6 @@ void ping(pid_t pid, int signal_number){
     else{
         printf("Sent signal %d to process with pid %d\n", signal_number, pid);
     }
-    exit(EXIT_SUCCESS);
+    // exit(EXIT_SUCCESS);
+    return;
 }

@@ -89,16 +89,16 @@ void check_background_processes_sync() {
             if (WIFEXITED(status)) {
                 // The process exited normally
                 // Update the status in your data structure
-                printf("exited:%s\n",background_processes[i].name);
+                // printf("exited:%s\n",background_processes[i].name);
                 strcpy(background_processes[i].status, "Finished");
             } else if (WIFSIGNALED(status)) {
                 // The process was terminated by a signal
                 // Update the status in your data structure
-                printf("signaled:%s\n",background_processes[i].name);
+                // printf("signaled:%s\n",background_processes[i].name);
                 strcpy(background_processes[i].status, "Failed/Stopped");
             }
             else if(WIFSTOPPED(status)){
-                printf("stopped:%s\n",background_processes[i].name);
+                // printf("stopped:%s\n",background_processes[i].name);
                 strcpy(background_processes[i].status, "Stopped");
             }
         }
@@ -174,7 +174,7 @@ void execute_background(char *args[]) {
 void handle_signal(int signum) {
     switch (signum) {
         case SIGCHLD:
-            printf("SIGCHLD received\n");
+            // printf("SIGCHLD received\n");
             // Handle child process terminated (SIGCHLD)
             // Add your handling code here
             check_background_processes_sync();
@@ -333,6 +333,14 @@ int main()
                 execute_background(args);
                 continue;
             }
+            
+            if(strcmp(args[0],"ping")==0){
+                pid_t pid=atoi(args[1]);
+                int signal_number=atoi(args[2]);
+
+                ping(pid,signal_number);
+                continue;
+            }
 
             // If the delimiter is ';', execute the command in the foreground
             pid_t child_pid = fork();
@@ -387,12 +395,12 @@ int main()
                     }
                 }
 
-                else if(strcmp(args[0],"ping")==0){
-                    pid_t pid=atoi(args[1]);
-                    int signal_number=atoi(args[2]);
+                // else if(strcmp(args[0],"ping")==0){
+                //     pid_t pid=atoi(args[1]);
+                //     int signal_number=atoi(args[2]);
 
-                    ping(pid,signal_number);
-                }
+                //     ping(pid,signal_number);
+                // }
 
                 else{
                     // execute using execvp
