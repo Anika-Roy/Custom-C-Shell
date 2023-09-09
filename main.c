@@ -316,6 +316,8 @@ int main()
             // get delimiter
             delimiter=tokens[j].delimiter;
 
+            // check if the token contains redirection symbols like '|' or '<' or '>'
+
             char command[MAX_COMMAND_LENGTH];
 
             // tokenise the token with whitespaces to get the command and arguments
