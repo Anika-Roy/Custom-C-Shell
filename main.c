@@ -76,7 +76,7 @@ void check_background_processes_sync() {
     for (int i = 0; i < background_process_count; i++) {
         pid_t pid = background_processes[i].pid;
         int status;
-        pid_t result = waitpid(pid, &status, WNOHANG);
+        pid_t result = waitpid(pid, &status, WNOHANG | WUNTRACED);
 
         if (result == -1) {
             // An error occurred
@@ -89,10 +89,12 @@ void check_background_processes_sync() {
             if (WIFEXITED(status)) {
                 // The process exited normally
                 // Update the status in your data structure
+                printf("exited:%s\n",background_processes[i].name);
                 strcpy(background_processes[i].status, "Finished");
             } else if (WIFSIGNALED(status)) {
                 // The process was terminated by a signal
                 // Update the status in your data structure
+                printf("signaled:%s\n",background_processes[i].name);
                 strcpy(background_processes[i].status, "Failed/Stopped");
             }
         }
@@ -168,13 +170,10 @@ void execute_background(char *args[]) {
 void handle_signal(int signum) {
     switch (signum) {
         case SIGCHLD:
+            printf("SIGCHLD received\n");
             // Handle child process terminated (SIGCHLD)
             // Add your handling code here
             check_background_processes_sync();
-            break;
-        case SIGINT:
-            // Handle Ctrl+C (SIGINT) - Terminate or interrupt a process
-            // Add your handling code here
             break;
         case SIGTSTP:
             // Handle Ctrl+Z (SIGTSTP) - Suspend a process
@@ -196,7 +195,6 @@ int main()
     sa.sa_flags = SA_RESTART;
 
     // Set up signal handlers for specific signals
-    sigaction(SIGINT, &sa, NULL);  // Handle Ctrl+C (SIGINT)
     sigaction(SIGCHLD, &sa, NULL); // Handle child process terminated (SIGCHLD)
     // sigaction(SIGTSTP, &sa, NULL); // Handle Ctrl+Z (SIGTSTP)
 
@@ -222,9 +220,14 @@ int main()
     while (1)
     {
         // Print appropriate prompt with username, systemname and directory before accepting input
+        // printf("background_process_count: %d\n",background_process_count );
         prompt(store_calling_directory);
         char input[4096];
         fgets(input, 4096, stdin);
+
+        //continue if input is empty
+        if (strcmp(input, "\n") == 0)
+            continue;
 
         // Handling PASTEVENTS EXECUTE: declare array of structs to store tokens and their delimiters 
         struct TokenWithDelimiter tokens_pastevents[MAX_TOKENS];
@@ -333,6 +336,8 @@ int main()
             if (child_pid < 0) {
                 perror("fork");
                 exit(EXIT_FAILURE);
+
+            
             } else if (child_pid == 0) {
                 // Child process
                 
@@ -356,6 +361,10 @@ int main()
                 // If the command is seek, call the seek function
                 else if (strcmp(args[0], "seek") == 0) {
                     seek(args, arg_count,store_calling_directory);
+                }
+
+                else if(strcmp(args[0],"activities")==0){
+                    activities(background_processes,background_process_count);
                 }
 
                 else if(strcmp(args[0],"pastevents")==0){

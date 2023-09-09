@@ -14,6 +14,6 @@ void activities(struct BackgroundProcess background_processes[], int num_backgro
     for(int i=0; i<num_background_processes; i++){
         printf("%s : %d - %s\n", background_processes[i].name, background_processes[i].pid, background_processes[i].status);
     }
-    // printf("\n");
-    return;
+
+    exit(EXIT_SUCCESS);
 }
