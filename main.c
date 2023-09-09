@@ -153,7 +153,16 @@ void execute_background(char *args[]) {
         // Parent process
 
         // Store child_pid in your data structure for background processes
-        insert_background_process(child_pid, args[0]);
+
+        // concatenate the args to get the whole command
+        char command[MAX_COMMAND_LENGTH];
+        command[0]='\0';
+        for(int i=0;args[i]!=NULL;i++){
+            strcat(command,args[i]);
+            if(args[i+1]!=NULL)
+                strcat(command," ");
+        }
+        insert_background_process(child_pid, command);
 
         printf("[%d] %d\n", background_process_count, child_pid);
         
@@ -194,11 +203,6 @@ int main()
     char events[MAX_EVENTS][MAX_EVENT_LENGTH];
     int event_count=0;
     read_past_events(events, &event_count, history_file_path);   
-
-    // print events for debugging
-    // for(int i=0;i<event_count;i++){
-    //     printf("%d->%s\n",i,events[i]);
-    // }
 
     while (1)
     {
@@ -268,12 +272,11 @@ int main()
             char delimiter = tokens_pastevents[j].delimiter;
 
             strcat(original_command, tokens_pastevents[j].token);
-            if(j<i-1)
-                strcat(original_command, &delimiter);
+            strcat(original_command, &delimiter);
         }
 
         // print the original command
-        printf("original command: %s\n",original_command);
+        // printf("original command: %s\n",original_command);
 
        // declare array of structs to store tokens and their delimiters
         struct TokenWithDelimiter tokens[MAX_TOKENS];
@@ -377,9 +380,9 @@ int main()
                 wait(&status);
                 time_t end_time = time(NULL);
                 
-                if (end_time - start_time > 2) {
-                    printf("Foreground process '%s' took %lds\n", args[0], (long)(end_time - start_time));
-                }
+                // if (end_time - start_time > 2) {
+                //     printf("Foreground process '%s' took %lds\n", args[0], (long)(end_time - start_time));
+                // }
             }
             
         }   
@@ -389,7 +392,7 @@ int main()
 
             if (event_count == 0 || (event_count>0 && strcmp(events[event_count - 1], original_command) != 0)) {
                 // print the last character of the original command
-                printf("last char: %d\n",original_command[strlen(original_command)-1]);
+                // printf("last char: %d\n",original_command[strlen(original_command)-1]);
                 add_event(original_command, events, &event_count);
                 write_past_events(events, event_count, history_file_path);
             }
