@@ -5,6 +5,7 @@
 #include "pasteventsHandler/pastevents.h"
 #include "seekHandler/seek.h"
 #include "activitiesHandler/activities.h"
+#include "pingHandler/ping.h"
 
 // Data structure to store background processes using array
 struct BackgroundProcess background_processes[MAX_PROCESSES];
@@ -35,6 +36,7 @@ void remove_background_process(int index) {
         }
         background_process_count--;
     }
+    return;
 }
 void check_background_processes_async() {
     for (int i = 0; i < background_process_count; i++) {
@@ -76,10 +78,9 @@ void check_background_processes_sync() {
         int status;
         pid_t result = waitpid(pid, &status, WNOHANG);
 
-        // printf("result: %d\n",result);
         if (result == -1) {
             // An error occurred
-            // perror("waitpid");
+            // perror("waitpid hello");
         } else if (result == 0) {
             // The process is still running
             continue;
@@ -87,18 +88,12 @@ void check_background_processes_sync() {
             // The process has exited
             if (WIFEXITED(status)) {
                 // The process exited normally
-                // printf("%s (PID %d) exited normally with status %d\n", background_processes[i].name, pid, WEXITSTATUS(status));
                 // Update the status in your data structure
                 strcpy(background_processes[i].status, "Finished");
-                // remove_background_process(i);
-                // i--;
             } else if (WIFSIGNALED(status)) {
                 // The process was terminated by a signal
-                printf("%s (PID %d) terminated abnormally by signal %d\n", background_processes[i].name, pid, WTERMSIG(status));
                 // Update the status in your data structure
-                strcpy(background_processes[i].status, "Failed");
-                // remove_background_process(i);
-                // i--;
+                strcpy(background_processes[i].status, "Failed/Stopped");
             }
         }
     }
@@ -110,13 +105,14 @@ void print_background_processes(){
         if(strcmp(background_processes[i].status,"Running")!=0){
             if(strcmp(background_processes[i].status,"Finished")==0)
                 printf("%s (PID %d) exited normally\n", background_processes[i].name, background_processes[i].pid);
-            else if(strcmp(background_processes[i].status,"Failed")==0)
+            else if(strcmp(background_processes[i].status,"Failed/Stopped")==0)
                 printf("%s (PID %d) terminated abnormally\n", background_processes[i].name, background_processes[i].pid);
             
             remove_background_process(i);
             i--;
         }
     }
+    return;
 }
 
 void execute_background(char *args[]) {
@@ -170,10 +166,13 @@ void execute_background(char *args[]) {
 }
 
 void handle_signal(int signum) {
-    if (signum == SIGCHLD) {
-        check_background_processes_sync();
-        // check_background_processes_async();
+    printf("reached");
+    // print the background processes table
+    for(int i=0 ;i<background_process_count;i++){
+        printf("[%d] %d %s\n",i+1,background_processes[i].pid,background_processes[i].name);
     }
+    if(signum==SIGCHLD)
+        check_background_processes_sync();
 }
 
 int main()
@@ -363,6 +362,13 @@ int main()
                     }
                 }
 
+                else if(strcmp(args[0],"ping")==0){
+                    pid_t pid=atoi(args[1]);
+                    int signal_number=atoi(args[2]);
+
+                    ping(pid,signal_number);
+                }
+
                 else{
                     // execute using execvp
                     int error_flag = execvp(args[0], args);
@@ -386,6 +392,7 @@ int main()
             }
             
         }   
+
         // if not, add the input to the list of past events
         // also, if the original command contains the work 'pastevents'(apart from ), don't add it to the list
         if (flag) {
@@ -398,9 +405,8 @@ int main()
             }
         }
 
-        // Check if any background processes have completed
-        check_background_processes_sync();
         print_background_processes();
+        // printf("number of background processes: %d\n",background_process_count);
     }
 
     return 0;

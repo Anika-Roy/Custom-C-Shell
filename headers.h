@@ -29,7 +29,7 @@
 struct BackgroundProcess {
     pid_t pid;
     char name[MAX_COMMAND_LENGTH];
-    char status[10];
+    char status[20];
 };
 
 struct TokenWithDelimiter {
