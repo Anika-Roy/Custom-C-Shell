@@ -207,22 +207,68 @@ int main()
         char input[4096];
         fgets(input, 4096, stdin);
 
-        // Dclare a variable to store the original command, which we'll get by concatenating all tokens
+        // Handling PASTEVENTS EXECUTE: declare array of structs to store tokens and their delimiters 
+        struct TokenWithDelimiter tokens_pastevents[MAX_TOKENS];
+        char temp_input[4096];
+        strcpy(temp_input,input);
+
+        int i=tokeniser(tokens_pastevents,temp_input);
+
+        // remove the newline character from the last token if present
+        if(tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]=='\n')
+            tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]='\0';
+
+        // handle pastevents execute command by iterating through the tokens
+        for(int j=0;j<i;j++){
+            // copy it to another string
+            char temp[MAX_EVENT_LENGTH];
+            strcpy(temp,tokens_pastevents[j].token);
+
+            // tokenise it with all whitespaces to get the command and arguments
+            char *args[MAX_ARGS];
+            int arg_count = 0;
+
+            args[arg_count] = strtok(temp, " \t\n");
+            while (args[arg_count] != NULL && arg_count < MAX_ARGS) {
+                arg_count++;
+                args[arg_count] = strtok(NULL, " \t\n");
+            }
+
+            // if the command is pastevents and the second argument is execute, then replace the command with the command at index <index>
+            if(strcmp(args[0],"pastevents")==0 && arg_count>1 && strcmp(args[1],"execute")==0){
+                // args[2]="<index>"
+                int index=atoi(args[2]);
+                if(index>event_count){
+                    printf("Index out of bounds\n");
+                    continue;
+                }
+                strcpy(tokens_pastevents[j].token,events[index-1]);
+            }
+        }
+
+        // Concatenate all tokens(and their arguments) to get the original command(along with delimiter)
         char original_command[MAX_EVENT_LENGTH];
         original_command[0]='\0';
+        
+        for(int j=0;j<i;j++){
+            char delimiter = tokens_pastevents[j].delimiter;
+
+            strcat(original_command, tokens_pastevents[j].token);
+            if(j<i-1)
+                strcat(original_command, &delimiter);
+        }
 
        // declare array of structs to store tokens and their delimiters
         struct TokenWithDelimiter tokens[MAX_TOKENS];
         
-        int i=tokeniser(tokens,input);
+        i=tokeniser(tokens,original_command);
 
         int flag=1;
-        int execute=0;
-        int token_count=0;
 
         char delimiter;
         char *args[MAX_ARGS];
         int arg_count = 0;
+
         // execute all tokens in a loop (autocompleted by Copilot)
         for (int j = 0; j < i; j++) {   
             // get delimiter
@@ -230,40 +276,14 @@ int main()
 
             char command[MAX_COMMAND_LENGTH];
 
-            // Tokenize with all whitespaces (space and tab) to get command and arguments
-            if(execute==0){
-                arg_count = 0;
+            // tokenise the token with whitespaces to get the command and arguments
+            strcpy(command, tokens[j].token);
+            arg_count = 0;
 
-                args[arg_count] = strtok(tokens[j].token, " \t\n");
-                while (args[arg_count] != NULL && arg_count < MAX_ARGS) {
-                    arg_count++;
-                    args[arg_count] = strtok(NULL, " \t\n");
-                }   
-            }
-            execute=0;
-
-            // print all tokens and args for debugging
-            // printf("Delimiter: %c\n", tokens[j].delimiter);
-            // printf("Command: %s\n", args[0]);
-            // printf("Arguments:\n");
-            // for (int k = 1; k < arg_count; k++) {
-            //     printf("%s\n", args[k]);
-            // }
-
-            // Concatenate all tokens(and their arguments) to get the original command(along with delimiter)
-            if(strcmp(args[0],"pastevents")!=0){
-                strcat(original_command, args[0]);
-                for (int k = 1; k < arg_count; k++) {
-                    strcat(original_command, " ");
-                    strcat(original_command, args[k]);
-                }
-                if(token_count<i-1)
-                    strcat(original_command, &delimiter);
-                token_count++;
-            }
-            // If pastevents was present, check if second arg was execute, only then save it
-            if((strcmp(args[0],"pastevents")==0 && arg_count>1 && strcmp(args[1],"execute")!=0) || (strcmp(args[0],"pastevents")==0 && arg_count==1) ){
-                flag=0;
+            args[arg_count] = strtok(command, " \t\n");
+            while (args[arg_count] != NULL && arg_count < MAX_ARGS) {
+                arg_count++;
+                args[arg_count] = strtok(NULL, " \t\n");
             }
 
             // If the delimiter is '&', execute the command in the background
@@ -308,42 +328,8 @@ int main()
                 }
 
                 else if(strcmp(args[0],"pastevents")==0){
-                    /*
-                    if its pastevents execute <index>, 
-                    replace the command in the args array with the command at index <index>, 
-                    decrement j and run the loop again
-                    This way, we don't store it in the history and we can execute it
-                    */ 
-                    if(arg_count>1 && strcmp(args[1],"execute")==0){
-                        // args[2]="<index>"
-                        int index=atoi(args[2]);
-                        if(index>event_count){
-                            printf("Index out of bounds\n");
-                            continue;
-                        }
-                        strcpy(command,events[index-1]);
-                        // printf("%s\n",command);
-                        char* command_args[100];
-                        int command_arg_count=0;
-                        char* token=strtok(command," ");
-                        while(token!=NULL){
-                            command_args[command_arg_count]=token;
-                            command_arg_count++;
-                            token=strtok(NULL," ");
-                        }
-                        // printf("%s\n",command_args[0]);
-                        // replace 
-                        strcpy(args[0],command_args[0]);
-                        for(int k=1;k<command_arg_count;k++){
-                            strcpy(args[k],command_args[k]);
-                        }
-                        arg_count=command_arg_count;
-                        j--;
-                        // printf("args0:%s\n",args[0]);
-                        execute=1;
-                        continue;
-                    }
-                    else if(arg_count>1 && strcmp(args[1],"purge")==0){
+                    flag=0;
+                    if(arg_count>1 && strcmp(args[1],"purge")==0){
                         event_count=0;
                         write_past_events(events,event_count,history_file_path);
                         continue;
@@ -384,7 +370,9 @@ int main()
         // also, if the original command contains the work 'pastevents'(apart from ), don't add it to the list
         if (flag) {
 
-            if (event_count == 0 || strcmp(events[event_count - 1], original_command) != 0) {
+            if (event_count == 0 || (event_count>0 && strcmp(events[event_count - 1], original_command) != 0)) {
+                // print the last character of the original command
+                printf("last char: %d\n",original_command[strlen(original_command)-1]);
                 add_event(original_command, events, &event_count);
                 write_past_events(events, event_count, history_file_path);
             }
