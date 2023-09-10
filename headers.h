@@ -45,6 +45,7 @@ struct PipeSeparatedCommands {
     int numArgs;
     int input_fd;
     int output_fd;
+    int append;
 };
 
 

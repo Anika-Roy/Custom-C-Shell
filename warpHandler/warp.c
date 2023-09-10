@@ -13,7 +13,8 @@ void warp(char *args[], int count, char *store_calling_directory, char* previous
         char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) == NULL) {
             perror("getcwd");
-            exit(EXIT_FAILURE);
+            // exit(EXIT_FAILURE);
+            return;
         }
         strcpy(previous_directory, cwd);
     }
@@ -24,7 +25,8 @@ void warp(char *args[], int count, char *store_calling_directory, char* previous
     if (count == 1) {
         if (chdir(store_calling_directory) != 0) {
             perror("chdir");
-            exit(EXIT_FAILURE);
+            // exit(EXIT_FAILURE);
+            return;
         }
     }
     else {
@@ -39,14 +41,16 @@ void warp(char *args[], int count, char *store_calling_directory, char* previous
                 strcat(new_path, args[i] + 1);
                 if (chdir(new_path) != 0) {
                     perror("chdir");
-                    exit(EXIT_FAILURE);
+                    // exit(EXIT_FAILURE);
+                    return;
                 }
             }
             // If the argument is -, warp into the previous directory
             else if (strcmp(args[i], "-") == 0) {
                 if (chdir(previous_directory) != 0) {
                     perror("chdir");
-                    exit(EXIT_FAILURE);
+                    // exit(EXIT_FAILURE);
+                    return;
                 }
             }
             // If the argument is ., do nothing
@@ -57,14 +61,16 @@ void warp(char *args[], int count, char *store_calling_directory, char* previous
             else if (strcmp(args[i], "..") == 0) {
                 if (chdir("..") != 0) {
                     perror("chdir");
-                    exit(EXIT_FAILURE);
+                    // exit(EXIT_FAILURE);
+                    return;
                 }
             }
             // If the argument is neither of the above, warp into the mentioned directory
             else {
                 if (chdir(args[i]) != 0) {
                     perror("chdir");
-                    exit(EXIT_FAILURE);
+                    // exit(EXIT_FAILURE);
+                    return;
                 }
             }
   
@@ -74,10 +80,12 @@ void warp(char *args[], int count, char *store_calling_directory, char* previous
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
         perror("getcwd");
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
+        return;
     }
     // Print the current working directory
     printf("%s\n", cwd);
+    // exit(EXIT_SUCCESS);
     return;
 
 }

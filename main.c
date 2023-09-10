@@ -338,6 +338,12 @@ int main()
                     continue;
                 }
 
+                // If the command is warp, call the warp function
+                else if (strcmp(pipe_separated_commands[k].args[0], "warp") == 0) {
+                    warp(pipe_separated_commands[k].args, pipe_separated_commands[k].numArgs, store_calling_directory, store_previous_directory);
+                    continue;
+                }
+
                 // If the delimiter is ';', execute the command in the foreground
                 pid_t child_pid = fork();
 
@@ -354,11 +360,6 @@ int main()
                     // Now you have the command and its arguments in the args array
                     if(strcmp(pipe_separated_commands[k].args[0],"exit")==0){
                         exit(0);
-                    }
-
-                    // If the command is warp, call the warp function
-                    else if (strcmp(pipe_separated_commands[k].args[0], "warp") == 0) {
-                        warp(pipe_separated_commands[k].args, pipe_separated_commands[k].numArgs, store_calling_directory, store_previous_directory);
                     }
 
                     // If the command is peek, call the peek function
