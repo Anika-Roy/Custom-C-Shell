@@ -43,8 +43,7 @@ struct PipeSeparatedCommands {
     char command[MAX_COMMAND_LENGTH];// is now tokenised, so dont use it
     char* args[MAX_ARGS];
     int numArgs;
-    int input_fd;
-    int output_fd;
+    int pipe_fds[2];
     int append;
 };
 

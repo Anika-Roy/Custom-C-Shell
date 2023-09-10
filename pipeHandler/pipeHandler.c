@@ -39,6 +39,9 @@ int pipe_separated_commands_populator(char* token,struct PipeSeparatedCommands p
             pipe_separated_commands[j].args[k] = strtok(NULL," \t\n");
         }
         pipe_separated_commands[j].numArgs = k;
+        // set input and output file descriptors to STDIN
+        pipe_separated_commands[j].pipe_fds[0] = STDIN_FILENO;
+        pipe_separated_commands[j].pipe_fds[1] = STDOUT_FILENO;
     }
 
     // // print args for debugging

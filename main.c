@@ -324,6 +324,48 @@ int main()
             // execute all pipe separated commands in a loop
             for(int k=0 ; k<num_pipes ; k++){
 
+                if (k < num_pipes - 1) {
+                    // Create a pipe for communication between commands
+                    if (pipe(pipe_separated_commands[k].pipe_fds) == -1) {
+                        perror("pipe");
+                        exit(EXIT_FAILURE);
+                    }
+                }
+
+                pid_t child_pid = fork();
+                if (child_pid < 0) {
+                    perror("fork");
+                    exit(EXIT_FAILURE);
+                } else if (child_pid == 0) {
+                    // Child process
+
+                    // Handle input redirection if needed
+                    if (k > 0) {
+                        // Connect the input of this command to the read end of the previous pipe
+                        dup2(pipe_separated_commands[k-1].pipe_fds[0], STDIN_FILENO);
+                        close(pipe_separated_commands[k - 1].pipe_fds[1]);  // Close the write end of the previous pipe
+                    }
+
+                    // Handle output redirection if needed
+                    if (k < num_pipes - 1) {
+                        // Connect the output of this command to the write end of the current pipe
+                        dup2(pipe_separated_commands[k].pipe_fds[1], STDOUT_FILENO);
+                        close(pipe_separated_commands[k].pipe_fds[0]);  // Close the read end of the current pipe
+                    }
+
+                    // Execute the command
+                    // execute using execvp
+                    int error_flag = execvp(pipe_separated_commands[k].args[0], pipe_separated_commands[k].args);
+                    
+                    // if error occurs, print error
+                    if (error_flag == -1) {
+                        printf("ERROR : '%s' is not a valid command\n",pipe_separated_commands[k].args[0]);
+                        exit(EXIT_FAILURE);
+                    }
+                    exit(EXIT_SUCCESS);
+                }
+                /*
+                
                 // If the delimiter is '&', execute the command in the background
                 if (delimiter == '&') {
                     execute_background(pipe_separated_commands[k].args);
@@ -421,8 +463,21 @@ int main()
                     // }
                 }
             }
-            
-        }   
+                */   
+            } 
+                // Close all pipe file descriptors in the parent process
+            for (int k = 0; k < num_pipes - 1; k++) {
+                close(pipe_separated_commands[k].pipe_fds[0]);
+                close(pipe_separated_commands[k].pipe_fds[1]);
+            }
+
+            // Wait for all child processes to complete
+            for (int k = 0; k < num_pipes; k++) {
+                int status;
+                wait(&status);
+            } 
+        }
+
 
         // if not, add the input to the list of past events
         // also, if the original command contains the work 'pastevents'(apart from ), don't add it to the list
@@ -442,3 +497,4 @@ int main()
 
     return 0;
 }
+
