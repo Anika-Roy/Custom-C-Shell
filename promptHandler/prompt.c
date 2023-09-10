@@ -19,7 +19,8 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
 
     char input_copy[4096];
     strcpy(input_copy, input);
-    
+    // printf("input string to tokeniser: %s\n", input_copy);
+
     // tokenise input copy with ; and & to get commands
     char *command = strtok(input_copy, ";&");
     int command_count = 0;
@@ -64,7 +65,7 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
         i++;
     }
 
-    //print the tokens and their delimiters
+    // //print the tokens and their delimiters
     // for (int i = 0; i < command_count; i++) {
     //     printf("token: %s\n", tokens[i].token);
     //     printf("delimiter:%c\n", tokens[i].delimiter);

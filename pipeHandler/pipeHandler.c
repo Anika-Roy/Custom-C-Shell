@@ -18,10 +18,10 @@ int pipe_separated_commands_populator(char* token,struct PipeSeparatedCommands p
         separated_command = strtok(NULL,"|");
         i++;
     }
-    
+    // printf("%d\n",i);
     // print pipe separated commands for debugging
     // for(int j=0;j<i;j++){
-    //     printf("%s\n",pipe_separated_commands[j].command);
+    //     printf("%s",pipe_separated_commands[j].command);
     // }
 
     // args[arg_count] = strtok(temp, " \t\n");
@@ -31,12 +31,12 @@ int pipe_separated_commands_populator(char* token,struct PipeSeparatedCommands p
     // }
 
     // tokenise wrt whitespace
-    int k=0;
     for(int j=0 ; j<i ; j++){
-        pipe_separated_commands[j].args[k] = strtok(pipe_separated_commands[j].command," \t\n");
+        int k=0;
+        pipe_separated_commands[j].args[k] = strtok(pipe_separated_commands[j].command," \t");
         while( pipe_separated_commands[j].args[k]!=NULL && pipe_separated_commands[j].numArgs < MAX_ARGS ){
             k++;
-            pipe_separated_commands[j].args[k] = strtok(NULL," \t\n");
+            pipe_separated_commands[j].args[k] = strtok(NULL," \t");
         }
         pipe_separated_commands[j].numArgs = k;
         // set input and output file descriptors to STDIN
@@ -47,7 +47,7 @@ int pipe_separated_commands_populator(char* token,struct PipeSeparatedCommands p
     // // print args for debugging
     // for(int j=0;j<i;j++){
     //     for(int k=0;k<pipe_separated_commands[j].numArgs;k++){
-    //         printf("args %d -> %s ",k,pipe_separated_commands[j].args[k]);
+    //         printf("here: args %d -> %s ",k,pipe_separated_commands[j].args[k]);
     //     }
     //     printf("\n");
     // }

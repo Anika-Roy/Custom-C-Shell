@@ -241,6 +241,13 @@ int main()
 
         int i=tokeniser(tokens_pastevents,temp_input);
 
+        // print tokens in tokens_pastevents
+        // printf("tokens in tokens_pastevents:\n");
+        // for(int j=0;j<i;j++){
+        //     printf("token: %s\n",tokens_pastevents[j].token);
+        //     printf("delimiter: %c\n",tokens_pastevents[j].delimiter);
+        // }
+
         // remove the newline character from the last token if present
         if(tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]=='\n')
             tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]='\0';
@@ -281,6 +288,7 @@ int main()
                     if(k<arg_count-1)
                         strcat(minimal_token," ");
                 }
+                // printf("minimal token: %s\n",minimal_token);
 
                 // copy the minimal token to the tokenised token
                 strcpy(tokens_pastevents[j].token,minimal_token);
@@ -295,7 +303,8 @@ int main()
             char delimiter = tokens_pastevents[j].delimiter;
 
             strcat(original_command, tokens_pastevents[j].token);
-            strcat(original_command, &delimiter);
+            if(j<i-1)
+                strcat(original_command, &delimiter);
         }
 
         // print the original command
@@ -303,8 +312,11 @@ int main()
 
        // declare array of structs to store tokens and their delimiters
         struct TokenWithDelimiter tokens[MAX_TOKENS];
-        
+
+
+        // printf("%d\n",i);
         i=tokeniser(tokens,original_command);
+        // printf("%d\n",i);
 
         int flag=1;
 
@@ -321,8 +333,19 @@ int main()
             // populate it by calling a function
             int num_pipes=pipe_separated_commands_populator(tokens[j].token,pipe_separated_commands);
 
+            // // print all pipe separated commands and their arguments for debugging
+            // for(int k=0;k<num_pipes;k++){
+            //     // printf("command: %s\n",pipe_separated_commands[k].command);
+            //     for(int l=0;l<pipe_separated_commands[k].numArgs;l++){
+            //         printf("args %d -> %s\n",l,pipe_separated_commands[k].args[l]);
+            //     }
+            // }
+
+
             // execute all pipe separated commands in a loop
             for(int k=0 ; k<num_pipes ; k++){
+
+                delimiter = tokens[j].delimiter;
 
                 if (k < num_pipes - 1) {
                     // Create a pipe for communication between commands
@@ -342,7 +365,7 @@ int main()
                     // Handle input redirection if needed
                     if (k > 0) {
                         // Connect the input of this command to the read end of the previous pipe
-                        dup2(pipe_separated_commands[k-1].pipe_fds[0], STDIN_FILENO);
+                        dup2(pipe_separated_commands[k - 1].pipe_fds[0], STDIN_FILENO);
                         close(pipe_separated_commands[k - 1].pipe_fds[1]);  // Close the write end of the previous pipe
                     }
 
@@ -354,9 +377,7 @@ int main()
                     }
 
                     // Execute the command
-                    // execute using execvp
                     int error_flag = execvp(pipe_separated_commands[k].args[0], pipe_separated_commands[k].args);
-                    
                     // if error occurs, print error
                     if (error_flag == -1) {
                         printf("ERROR : '%s' is not a valid command\n",pipe_separated_commands[k].args[0]);
@@ -364,6 +385,22 @@ int main()
                     }
                     exit(EXIT_SUCCESS);
                 }
+
+            }
+
+
+            // Close all pipe file descriptors in the parent process
+            for (int k = 0; k < num_pipes - 1; k++) {
+                close(pipe_separated_commands[k].pipe_fds[0]);
+                close(pipe_separated_commands[k].pipe_fds[1]);
+            }
+
+            // Wait for all child processes to complete
+            for (int k = 0; k < num_pipes; k++) {
+                int status;
+                wait(&status);
+            }
+                        
                 /*
                 
                 // If the delimiter is '&', execute the command in the background
@@ -464,35 +501,24 @@ int main()
                 }
             }
                 */   
-            } 
-                // Close all pipe file descriptors in the parent process
-            for (int k = 0; k < num_pipes - 1; k++) {
-                close(pipe_separated_commands[k].pipe_fds[0]);
-                close(pipe_separated_commands[k].pipe_fds[1]);
-            }
+           
 
-            // Wait for all child processes to complete
-            for (int k = 0; k < num_pipes; k++) {
-                int status;
-                wait(&status);
-            } 
+
+            // // if not, add the input to the list of past events
+            // // also, if the original command contains the work 'pastevents'(apart from ), don't add it to the list
+            // if (flag) {
+
+            //     if (event_count == 0 || (event_count>0 && strcmp(events[event_count - 1], original_command) != 0)) {
+            //         // print the last character of the original command
+            //         // printf("last char: %d\n",original_command[strlen(original_command)-1]);
+            //         add_event(original_command, events, &event_count);
+            //         write_past_events(events, event_count, history_file_path);
+            //     }
+            // }
+
+            // print_background_processes();
+            // // printf("number of background processes: %d\n",background_process_count);
         }
-
-
-        // if not, add the input to the list of past events
-        // also, if the original command contains the work 'pastevents'(apart from ), don't add it to the list
-        if (flag) {
-
-            if (event_count == 0 || (event_count>0 && strcmp(events[event_count - 1], original_command) != 0)) {
-                // print the last character of the original command
-                // printf("last char: %d\n",original_command[strlen(original_command)-1]);
-                add_event(original_command, events, &event_count);
-                write_past_events(events, event_count, history_file_path);
-            }
-        }
-
-        print_background_processes();
-        // printf("number of background processes: %d\n",background_process_count);
     }
 
     return 0;
