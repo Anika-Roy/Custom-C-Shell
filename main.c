@@ -6,6 +6,7 @@
 #include "seekHandler/seek.h"
 #include "activitiesHandler/activities.h"
 #include "pingHandler/ping.h"
+#include "pipeHandler/pipeHandler.h"
 
 // Data structure to store background processes using array
 struct BackgroundProcess background_processes[MAX_PROCESSES];
@@ -308,122 +309,116 @@ int main()
         int flag=1;
 
         char delimiter;
-        char *args[MAX_ARGS];
-        int arg_count = 0;
 
         // execute all tokens in a loop (autocompleted by Copilot)
         for (int j = 0; j < i; j++) {   
             // get delimiter
             delimiter=tokens[j].delimiter;
 
-            // check if the token contains redirection symbols like '|' or '<' or '>'
+            // declare an array of pipe separated commands
+            struct PipeSeparatedCommands pipe_separated_commands[MAX_NUM_PIPES];
 
-            char command[MAX_COMMAND_LENGTH];
+            // populate it by calling a function
+            int num_pipes=pipe_separated_commands_populator(tokens[j].token,pipe_separated_commands);
 
-            // tokenise the token with whitespaces to get the command and arguments
-            strcpy(command, tokens[j].token);
-            arg_count = 0;
+            // execute all pipe separated commands in a loop
+            for(int k=0 ; k<num_pipes ; k++){
 
-            args[arg_count] = strtok(command, " \t\n");
-            while (args[arg_count] != NULL && arg_count < MAX_ARGS) {
-                arg_count++;
-                args[arg_count] = strtok(NULL, " \t\n");
-            }
-
-            // If the delimiter is '&', execute the command in the background
-            if (delimiter == '&') {
-                execute_background(args);
-                continue;
-            }
-            
-            if(strcmp(args[0],"ping")==0){
-                pid_t pid=atoi(args[1]);
-                int signal_number=atoi(args[2]);
-
-                ping(pid,signal_number);
-                continue;
-            }
-
-            // If the delimiter is ';', execute the command in the foreground
-            pid_t child_pid = fork();
-
-            if (child_pid < 0) {
-                perror("fork");
-                exit(EXIT_FAILURE);
-
-            
-            } else if (child_pid == 0) {
-                // Child process
+                // If the delimiter is '&', execute the command in the background
+                if (delimiter == '&') {
+                    execute_background(pipe_separated_commands[k].args);
+                    continue;
+                }
                 
-                //---------------------------------------------------------------------------------
+                if(strcmp(pipe_separated_commands[k].args[0],"ping")==0){
+                    pid_t pid=atoi(pipe_separated_commands[k].args[1]);
+                    int signal_number=atoi(pipe_separated_commands[k].args[2]);
 
-                // Now you have the command and its arguments in the args array
-                if(strcmp(args[0],"exit")==0){
-                    exit(0);
+                    ping(pid,signal_number);
+                    continue;
                 }
 
-                // If the command is warp, call the warp function
-                else if (strcmp(args[0], "warp") == 0) {
-                    warp(args, arg_count, store_calling_directory, store_previous_directory);
-                }
+                // If the delimiter is ';', execute the command in the foreground
+                pid_t child_pid = fork();
 
-                // If the command is peek, call the peek function
-                else if (strcmp(args[0], "peek") == 0) {
-                    peek(args, arg_count, store_previous_directory,store_calling_directory);
-                }
+                if (child_pid < 0) {
+                    perror("fork");
+                    exit(EXIT_FAILURE);
 
-                // If the command is seek, call the seek function
-                else if (strcmp(args[0], "seek") == 0) {
-                    seek(args, arg_count,store_calling_directory);
-                }
+                
+                } else if (child_pid == 0) {
+                    // Child process
+                    
+                    //---------------------------------------------------------------------------------
 
-                else if(strcmp(args[0],"activities")==0){
-                    activities(background_processes,background_process_count);
-                }
-
-                else if(strcmp(args[0],"pastevents")==0){
-                    flag=0;
-                    if(arg_count>1 && strcmp(args[1],"purge")==0){
-                        event_count=0;
-                        write_past_events(events,event_count,history_file_path);
-                        continue;
+                    // Now you have the command and its arguments in the args array
+                    if(strcmp(pipe_separated_commands[k].args[0],"exit")==0){
+                        exit(0);
                     }
-                    else {
-                        if(arg_count==1){
-                            for(int i=0;i<event_count;i++){
-                                printf("%s\n",events[i]);   
+
+                    // If the command is warp, call the warp function
+                    else if (strcmp(pipe_separated_commands[k].args[0], "warp") == 0) {
+                        warp(pipe_separated_commands[k].args, pipe_separated_commands[k].numArgs, store_calling_directory, store_previous_directory);
+                    }
+
+                    // If the command is peek, call the peek function
+                    else if (strcmp(pipe_separated_commands[k].args[0], "peek") == 0) {
+                        peek(pipe_separated_commands[k].args, pipe_separated_commands[k].numArgs, store_previous_directory,store_calling_directory);
+                    }
+
+                    // If the command is seek, call the seek function
+                    else if (strcmp(pipe_separated_commands[k].args[0], "seek") == 0) {
+                        seek(pipe_separated_commands[k].args, pipe_separated_commands[k].numArgs,store_calling_directory);
+                    }
+
+                    else if(strcmp(pipe_separated_commands[k].args[0],"activities")==0){
+                        activities(background_processes,background_process_count);
+                    }
+
+                    else if(strcmp(pipe_separated_commands[k].args[0],"pastevents")==0){
+                        flag=0;
+                        if(pipe_separated_commands[k].numArgs>1 && strcmp(pipe_separated_commands[k].args[1],"purge")==0){
+                            event_count=0;
+                            write_past_events(events,event_count,history_file_path);
+                            continue;
+                        }
+                        else {
+                            if(pipe_separated_commands[k].numArgs==1){
+                                for(int i=0;i<event_count;i++){
+                                    printf("%s\n",events[i]);   
+                                }
                             }
                         }
                     }
-                }
 
-                // else if(strcmp(args[0],"ping")==0){
-                //     pid_t pid=atoi(args[1]);
-                //     int signal_number=atoi(args[2]);
+                    // else if(strcmp(args[0],"ping")==0){
+                    //     pid_t pid=atoi(args[1]);
+                    //     int signal_number=atoi(args[2]);
 
-                //     ping(pid,signal_number);
-                // }
+                    //     ping(pid,signal_number);
+                    // }
 
-                else{
-                    // execute using execvp
-                    int error_flag = execvp(args[0], args);
-                    // if error occurs, print error
-                    if (error_flag == -1) {
-                        printf("ERROR : '%s' is not a valid command\n",args[0]);
+                    else{
+                        // execute using execvp
+                        int error_flag = execvp(pipe_separated_commands[k].args[0], pipe_separated_commands[k].args);
+                        // if error occurs, print error
+                        if (error_flag == -1) {
+                            printf("ERROR : '%s' is not a valid command\n",pipe_separated_commands[k].args[0]);
+                        }
                     }
-                }
 
-                //---------------------------------------------------------------------------------
-            } else {
-                // Parent process
-                time_t start_time = time(NULL);
-                int status;
-                wait(&status);
-                time_t end_time = time(NULL);
-                
-                // if (end_time - start_time > 2) {
-                //     printf("Foreground process '%s' took %lds\n", args[0], (long)(end_time - start_time));
-                // }
+                    //---------------------------------------------------------------------------------
+                } else {
+                    // Parent process
+                    time_t start_time = time(NULL);
+                    int status;
+                    wait(&status);
+                    time_t end_time = time(NULL);
+                    
+                    // if (end_time - start_time > 2) {
+                    //     printf("Foreground process '%s' took %lds\n", args[0], (long)(end_time - start_time));
+                    // }
+                }
             }
             
         }   

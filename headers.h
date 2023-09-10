@@ -26,6 +26,8 @@
 
 #define MAX_PROCESSES 100
 
+#define MAX_NUM_PIPES 100
+
 struct BackgroundProcess {
     pid_t pid;
     char name[MAX_COMMAND_LENGTH];
@@ -37,6 +39,13 @@ struct TokenWithDelimiter {
     char delimiter; // Stores either ';' or '&'
 };
 
+struct PipeSeparatedCommands {
+    char command[MAX_COMMAND_LENGTH];// is now tokenised, so dont use it
+    char* args[MAX_ARGS];
+    int numArgs;
+    int input_fd;
+    int output_fd;
+};
 
 
 #include "promptHandler/prompt.h"
