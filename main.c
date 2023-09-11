@@ -96,7 +96,7 @@ void check_background_processes_sync() {
                 // The process was terminated by a signal
                 // Update the status in your data structure
                 // printf("signaled:%s\n",background_processes[i].name);
-                strcpy(background_processes[i].status, "Failed/Stopped");
+                strcpy(background_processes[i].status, "Failed");
             }
             else if(WIFSTOPPED(status)){
                 // printf("stopped:%s\n",background_processes[i].name);
@@ -109,10 +109,10 @@ void check_background_processes_sync() {
 
 void print_background_processes(){
     for (int i = 0; i < background_process_count; i++) {
-        if(strcmp(background_processes[i].status,"Running")!=0){
+        if(strcmp(background_processes[i].status,"Running")!=0 && strcmp(background_processes[i].status,"Stopped")!=0){
             if(strcmp(background_processes[i].status,"Finished")==0)
                 printf("%s (PID %d) exited normally\n", background_processes[i].name, background_processes[i].pid);
-            else if(strcmp(background_processes[i].status,"Failed/Stopped")==0)
+            else if(strcmp(background_processes[i].status,"Failed")==0)
                 printf("%s (PID %d) terminated abnormally\n", background_processes[i].name, background_processes[i].pid);
             
             remove_background_process(i);
@@ -180,9 +180,15 @@ void handle_signal(int signum) {
             // Add your handling code here
             check_background_processes_sync();
             break;
-        case SIGTSTP:
-            // Handle Ctrl+Z (SIGTSTP) - Suspend a process
-            // Add your handling code here
+        case SIGTSTP: // Ctrl+Z
+            printf("SIGTSTP received\n");
+            
+            break;
+        case SIGINT: // Ctrl+C
+            /* Interrupt any currently running foreground process by sending it the SIGINT signal. 
+            It has no effect if no foreground process is currently running.*/
+            printf("SIGINT received\n");
+
             break;
         // Add cases for other signals you want to handle
         default:
@@ -201,7 +207,9 @@ int main()
 
     // Set up signal handlers for specific signals
     sigaction(SIGCHLD, &sa, NULL); // Handle child process terminated (SIGCHLD)
-    // sigaction(SIGTSTP, &sa, NULL); // Handle Ctrl+Z (SIGTSTP)
+    sigaction(SIGTSTP, &sa, NULL); // Handle Ctrl+Z (SIGTSTP)
+    // sigaction(SIGINT, &sa, NULL); // Handle Ctrl+C (SIGINT)
+
 
     // Keep accepting commands
     char store_calling_directory[1024];
@@ -224,6 +232,20 @@ int main()
 
     while (1)
     {
+        // if (user_input == Ctrl+D) {
+        // // Handle Ctrl+D
+        // // Send termination signals to background processes
+        // for each background_process in background_processes {
+        //     send_termination_signal(background_process);
+        // }
+
+        // // Wait for background processes to exit
+        // wait_for_background_processes_to_exit();
+
+        // // Exit your shell program
+        // exit(EXIT_SUCCESS);
+    }
+
         // Print appropriate prompt with username, systemname and directory before accepting input
         // printf("background_process_count: %d\n",background_process_count );
         prompt(store_calling_directory);
@@ -493,7 +515,7 @@ int main()
                 int saved_stdin = dup(STDIN_FILENO); // Save the original stdin
                 int saved_stdout = dup(STDOUT_FILENO); // Save the original stdout
 
-                // [TODO: Error handling]
+                // [TODO: Error handling][TODO: add append more too]
                 for (int i = 0; i < pipe_separated_commands[k].numArgs; i++) {
                     if (strcmp(pipe_separated_commands[k].args[i], "<") == 0) {
                         // Found input redirection symbol '<'
