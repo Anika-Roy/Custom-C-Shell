@@ -321,7 +321,7 @@ int main()
         int flag=1;
 
         char delimiter;
-
+        
         // execute all tokens in a loop (autocompleted by Copilot)
         for (int j = 0; j < i; j++) {   
             // get delimiter
@@ -346,8 +346,9 @@ int main()
 
             // if num_pipes>1, only then create pipes
             if (num_pipes>1){
-
-                for(int k=0 ; k<num_pipes ; k++){
+                
+                int error_flag=0; // in case piping or redirection cause any errors, the pipe will not be completely executed
+                for(int k=0 ; k<num_pipes && error_flag==0 ; k++){
 
                     delimiter = tokens[j].delimiter;
 
@@ -356,6 +357,7 @@ int main()
                         if (pipe(pipe_separated_commands[k].pipe_fds) == -1) {
                             perror("pipe");
                             exit(EXIT_FAILURE);
+                            // error_flag=1;
                         }
                     }
 
@@ -401,7 +403,7 @@ int main()
                             close(pipe_separated_commands[k - 1].pipe_fds[0]);
                         }
                         // Wait for the child to complete
-                        wait(NULL);
+                        wait(NULL); // [TODO] Handle errors in piping
                     }
 
                 }
@@ -410,6 +412,65 @@ int main()
             else{
                 int k=0;
 
+                // Checking for redirection block (from ChatGPT)
+                // Check for input and output redirection symbols within args
+                char* input_file = NULL;
+                char* output_file = NULL;
+
+                int saved_stdin = dup(STDIN_FILENO); // Save the original stdin
+                int saved_stdout = dup(STDOUT_FILENO); // Save the original stdout
+
+                // [TODO: Error handling]
+                for (int i = 0; i < pipe_separated_commands[k].numArgs; i++) {
+                    if (strcmp(pipe_separated_commands[k].args[i], "<") == 0) {
+                        // Found input redirection symbol '<'
+                        if (i + 1 < pipe_separated_commands[k].numArgs) {
+                            input_file = pipe_separated_commands[k].args[i + 1];
+                            pipe_separated_commands[k].args[i] = NULL; // Null-terminate the command
+                            // break;
+                        } else {
+                            printf("Error: Missing input file after '<'\n");
+                            exit(EXIT_FAILURE);
+                        }
+                    } else if (strcmp(pipe_separated_commands[k].args[i], ">") == 0) {
+                        // Found output redirection symbol '>'
+                        if (i + 1 < pipe_separated_commands[k].numArgs) {
+                            output_file = pipe_separated_commands[k].args[i + 1];
+                            pipe_separated_commands[k].args[i] = NULL; // Null-terminate the command
+                            break;
+                        } else {
+                            printf("Error: Missing output file after '>'\n");
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+                }
+
+                // printf("input file: %s\n",input_file);
+                // printf("output file: %s\n",output_file);
+
+                // Now you can handle input and output redirection as needed
+                if (input_file) {
+                    // Open the input file and associate it with STDIN_FILENO
+                    int input_fd = open(input_file, O_RDONLY);
+                    if (input_fd == -1) {
+                        perror("open");
+                        exit(EXIT_FAILURE);
+                    }
+                    dup2(input_fd, STDIN_FILENO);
+                    close(input_fd);
+                }
+
+                if (output_file) {
+                    // printf("output file: %s\n",output_file);
+                    // Open the output file and associate it with STDOUT_FILENO
+                    int output_fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                    if (output_fd == -1) {
+                        perror("open");
+                        exit(EXIT_FAILURE);
+                    }
+                    dup2(output_fd, STDOUT_FILENO);
+                    close(output_fd);
+                }
                 // If the delimiter is '&', execute the command in the background
                 if (delimiter == '&') {
                     execute_background(pipe_separated_commands[k].args);
@@ -506,6 +567,12 @@ int main()
                     //     printf("Foreground process '%s' took %lds\n", args[0], (long)(end_time - start_time));
                     // }
                 }
+
+                // Reset stdin and stdout
+                dup2(saved_stdin, STDIN_FILENO);
+                dup2(saved_stdout, STDOUT_FILENO);
+                close(saved_stdin);
+                close(saved_stdout);
             }
 
             // if not, add the input to the list of past events
