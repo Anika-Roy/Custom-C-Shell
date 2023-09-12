@@ -7,6 +7,7 @@
 #include "activitiesHandler/activities.h"
 #include "pingHandler/ping.h"
 #include "pipeHandler/pipeHandler.h"
+#include "iManHandler/iMan.h"
 
 // Data structure to store background processes using array
 struct BackgroundProcess background_processes[MAX_PROCESSES];
@@ -244,7 +245,7 @@ int main()
 
         // // Exit your shell program
         // exit(EXIT_SUCCESS);
-    }
+        // }
 
         // Print appropriate prompt with username, systemname and directory before accepting input
         // printf("background_process_count: %d\n",background_process_count );
@@ -441,8 +442,8 @@ int main()
                         }
                     }
 
-                    printf("input_fd: %d\n",input_fd);
-                    printf("output_fd: %d\n",output_fd);
+                    // printf("input_fd: %d\n",input_fd);
+                    // printf("output_fd: %d\n",output_fd);
 
                     // in case we need to put it in background
                     delimiter = tokens[j].delimiter;
@@ -584,6 +585,11 @@ int main()
                 // If the command is warp, call the warp function
                 else if (strcmp(pipe_separated_commands[k].args[0], "warp") == 0) {
                     warp(pipe_separated_commands[k].args, pipe_separated_commands[k].numArgs, store_calling_directory, store_previous_directory);
+                    continue;
+                }
+
+                else if(strcmp(pipe_separated_commands[k].args[0],"iMan")==0){
+                    fetch_man_page(pipe_separated_commands[k].args[1]);
                     continue;
                 }
 
