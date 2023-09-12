@@ -25,36 +25,35 @@ pid_t get_most_recent_pid() {
     // autcompleted by Copilot
 
     FILE *fp;
+
+    // open file
+    fp = fopen("/proc/loadavg", "r");
+
+    // read the file
     char *line = NULL;
     size_t len = 0;
     ssize_t read;
 
-    fp = fopen("/proc/loadavg", "r");
-    if (fp == NULL)
-        exit(EXIT_FAILURE);
+    // read the first line
+    read = getline(&line, &len, fp);
 
-    int i = 0;
-    while ((read = getline(&line, &len, fp)) != -1) {
-        i++;
-        if (i == 1) {
-            // printf("%s", line);
-            break;
-        }
+    // get the fifth field
+    char *token = strtok(line, " ");
+    for (int i = 0; i < 4; i++) {
+        token = strtok(NULL, " ");
     }
 
-    fclose(fp);
-    if (line)
-        free(line);
-
-    char *token = strtok(line, " ");
-    token = strtok(NULL, " ");
-    token = strtok(NULL, " ");
-    token = strtok(NULL, " ");
-    token = strtok(NULL, " ");
-
+    // convert the string to integer
     pid_t pid = atoi(token);
 
+    // close the file
+    fclose(fp);
+
+    // printf("%d\n", pid);
+
     return pid;
+
+    
 }
 
 
@@ -65,7 +64,7 @@ void neonate(int time_interval) {
 
     // Idea to fork, discussed with Radhikesh Agrawal
 
-    printf("reached here\n");
+    // printf("reached here\n");
     pid_t pid = fork();
 
     if (pid == -1) {
@@ -74,18 +73,18 @@ void neonate(int time_interval) {
     }
 
     if (pid == 0) {
-        printf("reached child\n");
+        // printf("reached child\n");
         // child process
         while(1){
-            sleep(time_interval);
+            
+            sleep(1);
             // get the pid of the most recent process
             pid_t pid = get_most_recent_pid();
-            
             printf("%d\n", pid);
         }
     }
     else{
-        printf("reached parent\n");
+        // printf("reached parent\n");
         // parent process
         enableRawMode();
 
@@ -94,8 +93,8 @@ void neonate(int time_interval) {
 
         while (1) {
             c = getchar();
-            printf("%c", c);
             if (c == 'x') {
+                printf("%c", c);
                 // kill the child process
                 kill(pid, SIGKILL);
                 break;
@@ -107,4 +106,18 @@ void neonate(int time_interval) {
     }
 
     return;
+
+    // check if enable and disable raw mode are working
+    // enableRawMode();
+    // char c;
+    // while (1) {
+    //     c = getchar();
+        
+    //     if (c == 'x') {
+    //         printf("%c", c);
+    //         break;
+    //     }
+    // }
+    // disableRawMode();
+
 }
