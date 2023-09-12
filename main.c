@@ -8,6 +8,7 @@
 #include "pingHandler/ping.h"
 #include "pipeHandler/pipeHandler.h"
 #include "iManHandler/iMan.h"
+#include "neonateHandler/neonate.h"
 
 // Data structure to store background processes using array
 struct BackgroundProcess background_processes[MAX_PROCESSES];
@@ -590,6 +591,15 @@ int main()
 
                 else if(strcmp(pipe_separated_commands[k].args[0],"iMan")==0){
                     fetch_man_page(pipe_separated_commands[k].args[1]);
+                    continue;
+                }
+
+                else if(strcmp(pipe_separated_commands[k].args[0],"neonate")==0){
+                    // print the 1 and 2nd indexed arguements
+                    // printf("%s %s\n",pipe_separated_commands[k].args[1],pipe_separated_commands[k].args[2]);
+
+                    int time_interval= atoi(pipe_separated_commands[k].args[2]);
+                    neonate(time_interval);
                     continue;
                 }
 

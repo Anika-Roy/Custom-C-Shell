@@ -5,5 +5,5 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-void fetch_man_page(const char* command);
+void fetch_man_page(char* command);
 #endif
