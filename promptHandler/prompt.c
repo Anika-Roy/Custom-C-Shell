@@ -41,7 +41,7 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
             break;
         }
     }
-    if (last_token_is_whitespace) {
+    if (last_token_is_whitespace || last_token_length == 0) {
         command_count--;
     }
 
@@ -65,11 +65,11 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
         i++;
     }
 
-    // //print the tokens and their delimiters
-    // for (int i = 0; i < command_count; i++) {
-    //     printf("token: %s\n", tokens[i].token);
-    //     printf("delimiter:%c\n", tokens[i].delimiter);
-    // }
+    //print the tokens and their delimiters
+    for (int i = 0; i < command_count; i++) {
+        printf("token: %s\n", tokens[i].token);
+        printf("delimiter:%c\n", tokens[i].delimiter);
+    }
 
     return command_count;
 }
@@ -123,12 +123,10 @@ int handle_pastevents_execute_and_tokenise(char* input,char events[][MAX_EVENT_L
             // remove the last letter from tokens_pastevents[j].token
             tokens_pastevents[j].delimiter = events[index-1][strlen(events[index-1])-1];
             strcpy(tokens_pastevents[j].token,events[index-1]);
-            
-
+            tokens_pastevents[j].token[strlen(tokens_pastevents[j].token)-1]='\0';
 
             // if(events[index-1])
             // strcpy(tokens_pastevents[j].token,events[index-1]); //[TODO: Handle delimiter clashes]
-
 
         }
 
@@ -162,16 +160,16 @@ int handle_pastevents_execute_and_tokenise(char* input,char events[][MAX_EVENT_L
     }
 
     // print the original command
-    // printf("original command: %s\n",original_command);
+    printf("original command: %s\n",original_command);
 
     printf("prompt handler: %d\n",i);
     i=tokeniser(tokens,original_command);
 
     // print the tokens and their delimiters
-    for (int j = 0; j < i; j++) {
-        printf("token: %s\n", tokens[j].token);
-        printf("delimiter:%c\n", tokens[j].delimiter);
-    }
+    // for (int j = 0; j < i; j++) {
+    //     printf("token: %s\n", tokens[j].token);
+    //     printf("delimiter:%c\n", tokens[j].delimiter);
+    // }
     // printf("prompt handler: %d\n",i);
     return i;
 }
