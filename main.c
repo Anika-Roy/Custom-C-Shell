@@ -10,8 +10,6 @@
 #include "pipeHandler/pipeHandler.h"
 #include "iManHandler/iMan.h"
 #include "neonateHandler/neonate.h"
-#include <error.h>
-#include <errno.h>
 
 // Data structure to store background processes using array
 struct BackgroundProcess background_processes[MAX_PROCESSES];
