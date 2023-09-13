@@ -18,6 +18,21 @@ int pipe_separated_commands_populator(char* token,struct PipeSeparatedCommands p
         separated_command = strtok(NULL,"|");
         i++;
     }
+
+    // check if the last token has only whitespaces
+    // if yes, then decrement i
+    int last_token_length = strlen(pipe_separated_commands[i - 1].command);
+    int last_token_is_whitespace = 1;
+    for (int j = 0; j < last_token_length; j++) {
+        if (pipe_separated_commands[i - 1].command[j] != ' ' && pipe_separated_commands[i - 1].command[j] != '\t') {
+            last_token_is_whitespace = 0;
+            break;
+        }
+    }
+    if (last_token_is_whitespace) {
+        i--;
+    }
+
     // printf("%d\n",i);
     // // print pipe separated commands for debugging
     // for(int j=0;j<i;j++){
@@ -47,10 +62,11 @@ int pipe_separated_commands_populator(char* token,struct PipeSeparatedCommands p
     // print args for debugging
     // for(int j=0;j<i;j++){
     //     for(int k=0;k<pipe_separated_commands[j].numArgs;k++){
-    //         printf("here: args %d -> %s ",k,pipe_separated_commands[j].args[k]);
+    //         printf("here %d: args %d -> %s \n",j,k,pipe_separated_commands[j].args[k]);
     //     }
     //     printf("\n");
     // }
+    // printf("%d\n",i);
 
     // return number of pipe-separated commands
     return i;

@@ -118,25 +118,36 @@ int handle_pastevents_execute_and_tokenise(char* input,char events[][MAX_EVENT_L
                 printf("Index out of bounds\n");
                 continue;
             }
-            strcpy(tokens_pastevents[j].token,events[index-1]); //[TODO: Handle delimiter clashes]
+            //handle delimiters while copying
+            // set the delimiter as the last letter of events[index]-1
+            // remove the last letter from tokens_pastevents[j].token
+            tokens_pastevents[j].delimiter = events[index-1][strlen(events[index-1])-1];
+            strcpy(tokens_pastevents[j].token,events[index-1]);
+            
+
+
+            // if(events[index-1])
+            // strcpy(tokens_pastevents[j].token,events[index-1]); //[TODO: Handle delimiter clashes]
+
+
         }
 
-        else{
-            // concatenate the tokenised arguemnets to get the minimal token
-            char minimal_token[MAX_EVENT_LENGTH];
-            minimal_token[0]='\0';
-            for(int k=0;k<arg_count;k++){
-                strcat(minimal_token,args[k]);
-                if(k<arg_count-1)
-                    strcat(minimal_token," ");
-            }
-            // printf("minimal token: %s\n",minimal_token);
+        // else{
+        //     // concatenate the tokenised arguemnets to get the minimal token
+        //     char minimal_token[MAX_EVENT_LENGTH];
+        //     minimal_token[0]='\0';
+        //     for(int k=0;k<arg_count;k++){
+        //         strcat(minimal_token,args[k]);
+        //         if(k<arg_count-1)
+        //             strcat(minimal_token," ");
+        //     }
+        //     // printf("minimal token: %s\n",minimal_token);
 
-            // copy the minimal token to the tokenised token
-            strcpy(tokens_pastevents[j].token,minimal_token);
-            // printf("token: %s\n",tokens_pastevents[j].token);
-            // printf("delimiter: %c\n",tokens_pastevents[j].delimiter);
-        }
+        //     // copy the minimal token to the tokenised token
+        //     strcpy(tokens_pastevents[j].token,minimal_token);
+        //     // printf("token: %s\n",tokens_pastevents[j].token);
+        //     // printf("delimiter: %c\n",tokens_pastevents[j].delimiter);
+        // }
     }
 
     // Concatenate all tokens(and their arguments) to get the original command(along with delimiter)
@@ -153,9 +164,15 @@ int handle_pastevents_execute_and_tokenise(char* input,char events[][MAX_EVENT_L
     // print the original command
     // printf("original command: %s\n",original_command);
 
-    // printf("%d\n",i);
+    printf("prompt handler: %d\n",i);
     i=tokeniser(tokens,original_command);
 
+    // print the tokens and their delimiters
+    for (int j = 0; j < i; j++) {
+        printf("token: %s\n", tokens[j].token);
+        printf("delimiter:%c\n", tokens[j].delimiter);
+    }
+    // printf("prompt handler: %d\n",i);
     return i;
 }
 

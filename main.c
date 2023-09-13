@@ -95,6 +95,13 @@ void execute_foreground(char* args[], pid_t shell_pid){
 
         // pid_t my_pid = getpid();
 
+        // print the args
+        // for(int i=0;args[i]!=NULL;i++){
+        //     printf("%d->%s\n",i,args[i]);
+        // }
+
+        printf("called execvp!\n");
+
         int error_flag = execvp(args[0], args);
         // if error occurs, print error
         if (error_flag == -1) {
@@ -181,6 +188,7 @@ int main()
 
     while (1)
     {
+        // printf("starting again!\n");
         // Print appropriate prompt with username, systemname and directory before accepting input
         // printf("background_process_count: %d\n",background_process_count );
         prompt(store_calling_directory);
@@ -198,6 +206,9 @@ int main()
         struct TokenWithDelimiter tokens[MAX_TOKENS];
 
         int i = handle_pastevents_execute_and_tokenise(input,events,event_count,tokens,original_command);
+
+        printf("%d\n",i);
+        // printf("original command: %s\n",original_command);
 
     /*
     
@@ -292,6 +303,7 @@ int main()
         int flag=1;
 
         char delimiter;
+        printf("i: %d\n",i);
         
         // execute all tokens in a loop (autocompleted by Copilot)
         for (int j = 0; j < i; j++) {   
@@ -304,6 +316,7 @@ int main()
             // populate it by calling a function
             int num_pipes=pipe_separated_commands_populator(tokens[j].token,pipe_separated_commands);
 
+            // printf("%d\n",num_pipes);
             // print all pipe separated commands and their arguments for debugging
             // printf("num pipes: %d\n",num_pipes);
             // for(int k=0;k<num_pipes;k++){
@@ -453,7 +466,7 @@ int main()
 
             else{
                 int k=0;
-
+                // printf("entered else again!\n");
                 // Checking for redirection block (from ChatGPT)
                 // Check for input and output redirection symbols within args
                 char* input_file = NULL;
@@ -520,6 +533,7 @@ int main()
                     execute_background(pipe_separated_commands[k].args);
                     continue;
                 }
+                // printf("%s\n",pipe_separated_commands[k].args[0]);
                 
                 if(strcmp(pipe_separated_commands[k].args[0],"ping")==0){
                     pid_t pid=atoi(pipe_separated_commands[k].args[1]);
@@ -585,6 +599,7 @@ int main()
                     continue;
                 }
                 else{
+                    printf("executed again!\n");
                     execute_foreground(pipe_separated_commands[k].args,shell_pid);
                     continue;
                 }
