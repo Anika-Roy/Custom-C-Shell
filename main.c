@@ -1,4 +1,5 @@
 #include "headers.h"
+#include "fg_bg_Handler/utils.h"
 #include "promptHandler/prompt.h"
 #include "warpHandler/warp.h"
 #include "peekHandler/peek.h"
@@ -17,83 +18,6 @@ struct BackgroundProcess background_processes[MAX_PROCESSES];
 int background_process_count = 0;
 
 int backup;
-
-// insert a background process into an array
-void insert_background_process(pid_t pid, char *name) {// autocompleted by Copilot and Skeleton given by ChatGPT
-    // Insert the process into the array
-    // Update background_process_count
-    if (background_process_count < MAX_PROCESSES) {
-        struct BackgroundProcess process;
-        process.pid = pid;
-        strcpy(process.name, name);
-        strcpy(process.status, "Running"); // Initialize status as running
-        
-        background_processes[background_process_count] = process;
-        background_process_count++;
-    } else {
-        fprintf(stderr, "Maximum number of background processes reached\n");
-    }
-}
-
-// remove a background process from an array
-void remove_background_process(int index) {
-    if (index >= 0 && index < background_process_count) {
-        for (int i = index; i < background_process_count - 1; i++) {
-            background_processes[i] = background_processes[i + 1];
-        }
-        background_process_count--;
-    }
-    return;
-}
-
-void check_background_processes_sync() {
-    for (int i = 0; i < background_process_count; i++) {
-        pid_t pid = background_processes[i].pid;
-        int status;
-        pid_t result = waitpid(pid, &status, WNOHANG | WUNTRACED);
-
-        if (result == -1) {
-            // An error occurred
-            // perror("waitpid hello");
-        } else if (result == 0) {
-            // The process is still running
-            continue;
-        } else {
-            // The process has exited
-            if (WIFEXITED(status)) {
-                // The process exited normally
-                // Update the status in your data structure
-                // printf("exited:%s\n",background_processes[i].name);
-                strcpy(background_processes[i].status, "Finished");
-            } else if (WIFSIGNALED(status)) {
-                // The process was terminated by a signal
-                // Update the status in your data structure
-                // printf("signaled:%s\n",background_processes[i].name);
-                strcpy(background_processes[i].status, "Failed");
-            }
-            else if(WIFSTOPPED(status)){
-                // printf("stopped:%s\n",background_processes[i].name);
-                strcpy(background_processes[i].status, "Stopped");
-            }
-        }
-    }
-}
-
-
-void print_background_processes(){
-    for (int i = 0; i < background_process_count; i++) {
-        if(strcmp(background_processes[i].status,"Running")!=0 && strcmp(background_processes[i].status,"Stopped")!=0){
-            if(strcmp(background_processes[i].status,"Finished")==0)
-                printf("%s (PID %d) exited normally\n", background_processes[i].name, background_processes[i].pid);
-            else if(strcmp(background_processes[i].status,"Failed")==0)
-                printf("%s (PID %d) terminated abnormally\n", background_processes[i].name, background_processes[i].pid);
-            
-            remove_background_process(i);
-            i--;
-        }
-    }
-    return;
-}
 
 void execute_background(char *args[]) {
     // taken from ChatGPT
@@ -138,7 +62,7 @@ void execute_background(char *args[]) {
             if(args[i+1]!=NULL)
                 strcat(command," ");
         }
-        insert_background_process(child_pid, command);
+        insert_background_process(child_pid, command,&background_process_count,background_processes);
 
         printf("[%d] %d\n", background_process_count, child_pid);
         
@@ -201,7 +125,7 @@ void handle_signal(int signum) {
             // printf("SIGCHLD received\n");
             // Handle child process terminated (SIGCHLD)
             // Add your handling code here
-            check_background_processes_sync();
+            check_background_processes_sync(&background_process_count,background_processes);
             break;
         case SIGTSTP: // Ctrl+Z
             printf("SIGTSTP received\n");
@@ -712,7 +636,7 @@ int main()
                 }
             }
 
-            print_background_processes();
+            print_background_processes(&background_process_count,background_processes);
             // printf("number of background processes: %d\n",background_process_count);
         }
     }

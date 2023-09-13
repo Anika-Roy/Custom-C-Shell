@@ -12,7 +12,7 @@ void insert_background_process(pid_t pid, char *name,int* background_process_cou
         strcpy(process.status, "Running"); // Initialize status as running
         
         background_processes[*background_process_count] = process;
-        *background_process_count++;
+        (*background_process_count)++;
     } else {
         fprintf(stderr, "Maximum number of background processes reached\n");
     }
@@ -24,7 +24,7 @@ void remove_background_process(int index,int* background_process_count,struct Ba
         for (int i = index; i < *background_process_count - 1; i++) {
             background_processes[i] = background_processes[i + 1];
         }
-        *background_process_count--;
+        (*background_process_count)--;
     }
     return;
 }
