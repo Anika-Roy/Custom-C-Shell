@@ -10,9 +10,6 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <error.h>
-#include <errno.h>
-
 
 // will contain common headers most files require + what main requires
 #define MAX_TOKENS 1024

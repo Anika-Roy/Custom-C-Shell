@@ -89,7 +89,7 @@ void execute_foreground(char* args[], pid_t shell_pid){
         // Bring the group to the foreground
         tcsetpgrp(backup, my_pid);
 
-        fprintf(stderr, "PID %s",strerror(errno));
+        // fprintf(stderr, "PID %s",strerror(errno));
 
         // write(1,"hello\n",6);
 
@@ -106,10 +106,10 @@ void execute_foreground(char* args[], pid_t shell_pid){
     }
     else {
 
-        printf("reached parent\n");
+        // printf("reached parent\n");
         wait(NULL);
 
-        // signal(SIGTTOU, SIG_IGN);
+        signal(SIGTTOU, SIG_IGN);
         // Give control back to the shell
         tcsetpgrp(backup, shell_pid);
 
@@ -191,92 +191,103 @@ int main()
         if (strcmp(input, "\n") == 0)
             continue;
 
-        // Handling PASTEVENTS EXECUTE: declare array of structs to store tokens and their delimiters 
-        struct TokenWithDelimiter tokens_pastevents[MAX_TOKENS];
-        char temp_input[4096];
-        strcpy(temp_input,input);
-
-        int i=tokeniser(tokens_pastevents,temp_input);
-
-        // print tokens in tokens_pastevents
-        // printf("tokens in tokens_pastevents:\n");
-        // for(int j=0;j<i;j++){
-        //     printf("token: %s\n",tokens_pastevents[j].token);
-        //     printf("delimiter: %c\n",tokens_pastevents[j].delimiter);
-        // }
-
-        // remove the newline character from the last token if present
-        if(tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]=='\n')
-            tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]='\0';
-
-        // handle pastevents execute command by iterating through the tokens
-        for(int j=0;j<i;j++){
-            // copy it to another string
-            char temp[MAX_EVENT_LENGTH];
-            strcpy(temp,tokens_pastevents[j].token);
-
-            // tokenise it with all whitespaces to get the command and arguments
-            char *args[MAX_ARGS];
-            int arg_count = 0;
-
-            args[arg_count] = strtok(temp, " \t\n");
-            while (args[arg_count] != NULL && arg_count < MAX_ARGS) {
-                arg_count++;
-                args[arg_count] = strtok(NULL, " \t\n");
-            }
-
-            // if the command is pastevents and the second argument is execute, then replace the command with the command at index <index>
-            if(strcmp(args[0],"pastevents")==0 && arg_count>1 && strcmp(args[1],"execute")==0){
-                // args[2]="<index>"
-                int index=atoi(args[2]);
-                if(index>event_count){
-                    printf("Index out of bounds\n");
-                    continue;
-                }
-                strcpy(tokens_pastevents[j].token,events[index-1]); //[TODO: Handle delimiter clashes]
-            }
-
-            else{
-                // concatenate the tokenised arguemnets to get the minimal token
-                char minimal_token[MAX_EVENT_LENGTH];
-                minimal_token[0]='\0';
-                for(int k=0;k<arg_count;k++){
-                    strcat(minimal_token,args[k]);
-                    if(k<arg_count-1)
-                        strcat(minimal_token," ");
-                }
-                // printf("minimal token: %s\n",minimal_token);
-
-                // copy the minimal token to the tokenised token
-                strcpy(tokens_pastevents[j].token,minimal_token);
-                // printf("token: %s\n",tokens_pastevents[j].token);
-                // printf("delimiter: %c\n",tokens_pastevents[j].delimiter);
-            }
-        }
-
-        // Concatenate all tokens(and their arguments) to get the original command(along with delimiter)
         char original_command[MAX_EVENT_LENGTH];
         original_command[0]='\0';
-        
-        for(int j=0;j<i;j++){
-            char delimiter = tokens_pastevents[j].delimiter;
 
-            strcat(original_command, tokens_pastevents[j].token);
-            // if(j<i-1)
-            //     strcat(original_command, &delimiter); [TODO: I had added this to debug, but forgot why, not its causing problems with sending things to background]
-            strcat(original_command, &delimiter);
-        }
-
-        // print the original command
-        // printf("original command: %s\n",original_command);
-
-       // declare array of structs to store tokens and their delimiters
+        // declare array of structs to store tokens and their delimiters
         struct TokenWithDelimiter tokens[MAX_TOKENS];
 
+        int i = handle_pastevents_execute_and_tokenise(input,events,event_count,tokens,original_command);
 
+    /*
+    
+    //     // Handling PASTEVENTS EXECUTE: declare array of structs to store tokens and their delimiters 
+    //     struct TokenWithDelimiter tokens_pastevents[MAX_TOKENS];
+    //     char temp_input[4096];
+    //     strcpy(temp_input,input);
+
+    //     int i=tokeniser(tokens_pastevents,temp_input);
+
+    //     // print tokens in tokens_pastevents
+    //     // printf("tokens in tokens_pastevents:\n");
+    //     // for(int j=0;j<i;j++){
+    //     //     printf("token: %s\n",tokens_pastevents[j].token);
+    //     //     printf("delimiter: %c\n",tokens_pastevents[j].delimiter);
+    //     // }
+
+    //     // remove the newline character from the last token if present
+    //     if(tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]=='\n')
+    //         tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]='\0';
+
+    //     // handle pastevents execute command by iterating through the tokens
+    //     for(int j=0;j<i;j++){
+    //         // copy it to another string
+    //         char temp[MAX_EVENT_LENGTH];
+    //         strcpy(temp,tokens_pastevents[j].token);
+
+    //         // tokenise it with all whitespaces to get the command and arguments
+    //         char *args[MAX_ARGS];
+    //         int arg_count = 0;
+
+    //         args[arg_count] = strtok(temp, " \t\n");
+    //         while (args[arg_count] != NULL && arg_count < MAX_ARGS) {
+    //             arg_count++;
+    //             args[arg_count] = strtok(NULL, " \t\n");
+    //         }
+
+    //         // if the command is pastevents and the second argument is execute, then replace the command with the command at index <index>
+    //         if(strcmp(args[0],"pastevents")==0 && arg_count>1 && strcmp(args[1],"execute")==0){
+    //             // args[2]="<index>"
+    //             int index=atoi(args[2]);
+    //             if(index>event_count){
+    //                 printf("Index out of bounds\n");
+    //                 continue;
+    //             }
+    //             strcpy(tokens_pastevents[j].token,events[index-1]); //[TODO: Handle delimiter clashes]
+    //         }
+
+    //         else{
+    //             // concatenate the tokenised arguemnets to get the minimal token
+    //             char minimal_token[MAX_EVENT_LENGTH];
+    //             minimal_token[0]='\0';
+    //             for(int k=0;k<arg_count;k++){
+    //                 strcat(minimal_token,args[k]);
+    //                 if(k<arg_count-1)
+    //                     strcat(minimal_token," ");
+    //             }
+    //             // printf("minimal token: %s\n",minimal_token);
+
+    //             // copy the minimal token to the tokenised token
+    //             strcpy(tokens_pastevents[j].token,minimal_token);
+    //             // printf("token: %s\n",tokens_pastevents[j].token);
+    //             // printf("delimiter: %c\n",tokens_pastevents[j].delimiter);
+    //         }
+    //     }
+
+    //     // Concatenate all tokens(and their arguments) to get the original command(along with delimiter)
+    //     char original_command[MAX_EVENT_LENGTH];
+    //     original_command[0]='\0';
+        
+    //     for(int j=0;j<i;j++){
+    //         char delimiter = tokens_pastevents[j].delimiter;
+
+    //         strcat(original_command, tokens_pastevents[j].token);
+    //         // if(j<i-1)
+    //         //     strcat(original_command, &delimiter); [TODO: I had added this to debug, but forgot why, not its causing problems with sending things to background]
+    //         strcat(original_command, &delimiter);
+    //     }
+
+    //     // print the original command
+    //     // printf("original command: %s\n",original_command);
+
+    //    // declare array of structs to store tokens and their delimiters
+    //     struct TokenWithDelimiter tokens[MAX_TOKENS];
+
+
+    //     // printf("%d\n",i);
+    //     i=tokeniser(tokens,original_command);
         // printf("%d\n",i);
-        i=tokeniser(tokens,original_command);
-        // printf("%d\n",i);
+    */
 
         int flag=1;
 
@@ -293,7 +304,8 @@ int main()
             // populate it by calling a function
             int num_pipes=pipe_separated_commands_populator(tokens[j].token,pipe_separated_commands);
 
-            // // print all pipe separated commands and their arguments for debugging
+            // print all pipe separated commands and their arguments for debugging
+            // printf("num pipes: %d\n",num_pipes);
             // for(int k=0;k<num_pipes;k++){
             //     // printf("command: %s\n",pipe_separated_commands[k].command);
             //     for(int l=0;l<pipe_separated_commands[k].numArgs;l++){
@@ -572,48 +584,48 @@ int main()
                     activities(background_processes,background_process_count);
                     continue;
                 }
-                // else{
-                //     execute_foreground(pipe_separated_commands[k].args,shell_pid);
-                //     continue;
-                // }
-                // If the delimiter is ';', execute the command in the foreground
-                pid_t child_pid = fork();
+                else{
+                    execute_foreground(pipe_separated_commands[k].args,shell_pid);
+                    continue;
+                }
+                // // If the delimiter is ';', execute the command in the foreground
+                // pid_t child_pid = fork();
 
-                if (child_pid < 0) {
-                    perror("fork");
-                    exit(EXIT_FAILURE);
+                // if (child_pid < 0) {
+                //     perror("fork");
+                //     exit(EXIT_FAILURE);
 
                 
-                } else if (child_pid == 0) {
-                    // Child process
+                // } else if (child_pid == 0) {
+                //     // Child process
                     
-                    //---------------------------------------------------------------------------------
+                //     //---------------------------------------------------------------------------------
 
-                    if(strcmp(pipe_separated_commands[k].args[0],"activities")==0){
-                        activities(background_processes,background_process_count);
-                    }
+                //     if(strcmp(pipe_separated_commands[k].args[0],"activities")==0){
+                //         activities(background_processes,background_process_count);
+                //     }
 
-                    else{
-                        // execute using execvp
-                        int error_flag = execvp(pipe_separated_commands[k].args[0], pipe_separated_commands[k].args);
-                        // if error occurs, print error
-                        if (error_flag == -1) {
-                            printf("ERROR : '%s' is not a valid command\n",pipe_separated_commands[k].args[0]);
-                        }
-                    }
+                //     else{
+                //         // execute using execvp
+                //         int error_flag = execvp(pipe_separated_commands[k].args[0], pipe_separated_commands[k].args);
+                //         // if error occurs, print error
+                //         if (error_flag == -1) {
+                //             printf("ERROR : '%s' is not a valid command\n",pipe_separated_commands[k].args[0]);
+                //         }
+                //     }
 
-                    //---------------------------------------------------------------------------------
-                } else {
-                    // Parent process
-                    time_t start_time = time(NULL);
-                    int status;
-                    wait(&status);
-                    time_t end_time = time(NULL);
+                //     //---------------------------------------------------------------------------------
+                // } else {
+                //     // Parent process
+                //     time_t start_time = time(NULL);
+                //     int status;
+                //     wait(&status);
+                //     time_t end_time = time(NULL);
                     
-                    // if (end_time - start_time > 2) {
-                    //     printf("Foreground process '%s' took %lds\n", args[0], (long)(end_time - start_time));
-                    // }
-                }
+                //     // if (end_time - start_time > 2) {
+                //     //     printf("Foreground process '%s' took %lds\n", args[0], (long)(end_time - start_time));
+                //     // }
+                // }
 
                 // Reset stdin and stdout
                 dup2(saved_stdin, STDIN_FILENO);

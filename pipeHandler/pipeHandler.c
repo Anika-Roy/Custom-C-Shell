@@ -19,7 +19,7 @@ int pipe_separated_commands_populator(char* token,struct PipeSeparatedCommands p
         i++;
     }
     // printf("%d\n",i);
-    // print pipe separated commands for debugging
+    // // print pipe separated commands for debugging
     // for(int j=0;j<i;j++){
     //     printf("%s",pipe_separated_commands[j].command);
     // }
@@ -44,7 +44,7 @@ int pipe_separated_commands_populator(char* token,struct PipeSeparatedCommands p
         pipe_separated_commands[j].pipe_fds[1] = STDOUT_FILENO;
     }
 
-    // // print args for debugging
+    // print args for debugging
     // for(int j=0;j<i;j++){
     //     for(int k=0;k<pipe_separated_commands[j].numArgs;k++){
     //         printf("here: args %d -> %s ",k,pipe_separated_commands[j].args[k]);
