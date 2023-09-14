@@ -19,7 +19,7 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
 
     char input_copy[4096];
     strcpy(input_copy, input);
-    // printf("input string to tokeniser: %s\n", input_copy);
+    printf("input string to tokeniser: %s, length of string: %ld\n", input_copy, strlen(input_copy));
 
     // tokenise input copy with ; and & to get commands
     char *command = strtok(input_copy, ";&");
@@ -31,19 +31,24 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
         command = strtok(NULL, ";&\n");
     }
 
+    // printf("before check command count: %d\n", command_count);
+
     // check if the last token has only whitespaces
     // if yes, then decrement command_count
     int last_token_length = strlen(tokens[command_count - 1].token);
+    // printf("last token char=%d\n",tokens[command_count - 1].token[0]);
     int last_token_is_whitespace = 1;
     for (int i = 0; i < last_token_length; i++) {
-        if (tokens[command_count - 1].token[i] != ' ' && tokens[command_count - 1].token[i] != '\t') {
+        if (!isspace(tokens[command_count - 1].token[i])) {
             last_token_is_whitespace = 0;
             break;
         }
     }
-    if (last_token_is_whitespace || last_token_length == 0) {
+    if (last_token_is_whitespace) {
         command_count--;
     }
+
+    // printf("after check command count: %d\n", command_count);
 
     // now using the original input string, get the corresponding delimiter in tokens[i].delimiter
     // compare the tokens and skip whitespaces to find the delimiter
@@ -66,10 +71,11 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
     }
 
     //print the tokens and their delimiters
-    for (int i = 0; i < command_count; i++) {
-        printf("token: %s\n", tokens[i].token);
-        printf("delimiter:%c\n", tokens[i].delimiter);
-    }
+    // printf("Tokens in tokeniser:\n");
+    // for (int i = 0; i < command_count; i++) {
+    //     printf("token: %s\n", tokens[i].token);
+    //     printf("delimiter:%c\n", tokens[i].delimiter);
+    // }
 
     return command_count;
 }
@@ -91,8 +97,8 @@ int handle_pastevents_execute_and_tokenise(char* input,char events[][MAX_EVENT_L
     // }
 
     // remove the newline character from the last token if present
-    if(tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]=='\n')
-        tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]='\0';
+    // if(tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]=='\n')
+    //     tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]='\0';
 
     // handle pastevents execute command by iterating through the tokens
     for(int j=0;j<i;j++){
@@ -154,15 +160,19 @@ int handle_pastevents_execute_and_tokenise(char* input,char events[][MAX_EVENT_L
         char delimiter = tokens_pastevents[j].delimiter;
 
         strcat(original_command, tokens_pastevents[j].token);
+        // printf("tokens length: %ld\n",strlen( tokens_pastevents[j].token));
         // if(j<i-1)
         //     strcat(original_command, &delimiter); [TODO: I had added this to debug, but forgot why, not its causing problems with sending things to background]
-        strcat(original_command, &delimiter);
+        char tmpstr[2];
+        tmpstr[0] = delimiter;
+        tmpstr[1] = 0;
+        strcat(original_command, tmpstr);
     }
 
-    // print the original command
-    printf("original command: %s\n",original_command);
+    // // print the original command
+    // printf("original command: %s, length of original command: %ld\n",original_command,strlen(original_command));
 
-    printf("prompt handler: %d\n",i);
+    // printf("prompt handler: %d\n",i);
     i=tokeniser(tokens,original_command);
 
     // print the tokens and their delimiters
