@@ -19,7 +19,7 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
 
     char input_copy[4096];
     strcpy(input_copy, input);
-    printf("input string to tokeniser: %s, length of string: %ld\n", input_copy, strlen(input_copy));
+    // printf("input string to tokeniser: %s, length of string: %ld\n", input_copy, strlen(input_copy));
 
     // tokenise input copy with ; and & to get commands
     char *command = strtok(input_copy, ";&");
@@ -28,11 +28,11 @@ int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
         // printf("%s\n", command);
         strcpy(tokens[command_count].token, command);
         command_count++;
-        command = strtok(NULL, ";&\n");
+        command = strtok(NULL, ";&");
     }
 
     // printf("before check command count: %d\n", command_count);
-
+    // printf("last token: %s\n",tokens[command_count - 1].token);
     // check if the last token has only whitespaces
     // if yes, then decrement command_count
     int last_token_length = strlen(tokens[command_count - 1].token);
@@ -97,8 +97,8 @@ int handle_pastevents_execute_and_tokenise(char* input,char events[][MAX_EVENT_L
     // }
 
     // remove the newline character from the last token if present
-    // if(tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]=='\n')
-    //     tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]='\0';
+    if(tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]=='\n')
+        tokens_pastevents[i-1].token[strlen(tokens_pastevents[i-1].token)-1]='\0';
 
     // handle pastevents execute command by iterating through the tokens
     for(int j=0;j<i;j++){

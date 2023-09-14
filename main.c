@@ -15,7 +15,8 @@
 struct BackgroundProcess background_processes[MAX_PROCESSES];
 int background_process_count = 0;
 
-int backup;
+int backup_input;
+int backup_output;
 
 void execute_background(char *args[]) {
     // taken from ChatGPT
@@ -87,7 +88,7 @@ void execute_foreground(char* args[], pid_t shell_pid){
 
         signal(SIGTTOU, SIG_IGN);
         // Bring the group to the foreground
-        tcsetpgrp(backup, my_pid);
+        tcsetpgrp(backup_input, my_pid);
 
         // fprintf(stderr, "PID %s",strerror(errno));
 
@@ -118,7 +119,7 @@ void execute_foreground(char* args[], pid_t shell_pid){
 
         signal(SIGTTOU, SIG_IGN);
         // Give control back to the shell
-        tcsetpgrp(backup, shell_pid);
+        tcsetpgrp(backup_input, shell_pid);
 
         return;
     }
@@ -184,7 +185,8 @@ int main()
 
     // store the pid of the shell
     pid_t shell_pid = getpid(); 
-    backup = STDIN_FILENO; 
+    backup_input = STDIN_FILENO; 
+    backup_output = STDOUT_FILENO;
 
     while (1)
     {
@@ -373,7 +375,7 @@ int main()
 
             else{
                 int k=0;
-                // printf("entered else again!\n");
+                printf("entered else again!\n");
                 // Checking for redirection block (from ChatGPT)
                 // Check for input and output redirection symbols within args
                 char* input_file = NULL;
@@ -500,60 +502,62 @@ int main()
                             }
                         }
                     }
+
                 }
                 else if(strcmp(pipe_separated_commands[k].args[0],"activities")==0){
                     activities(background_processes,background_process_count);
                     continue;
                 }
-                else{
-                    // printf("executed again!\n");
-                    execute_foreground(pipe_separated_commands[k].args,shell_pid);
-                    continue;
-                }
-                // // If the delimiter is ';', execute the command in the foreground
-                // pid_t child_pid = fork();
+                // else{
+                //     // printf("executed again!\n");
+                //     execute_foreground(pipe_separated_commands[k].args,shell_pid);
+                //     continue;
+                // }
+                // If the delimiter is ';', execute the command in the foreground
+                pid_t child_pid = fork();
 
-                // if (child_pid < 0) {
-                //     perror("fork");
-                //     exit(EXIT_FAILURE);
+                if (child_pid < 0) {
+                    perror("fork");
+                    exit(EXIT_FAILURE);
 
                 
-                // } else if (child_pid == 0) {
-                //     // Child process
+                } else if (child_pid == 0) {
+                    // Child process
                     
-                //     //---------------------------------------------------------------------------------
+                    //---------------------------------------------------------------------------------
 
-                //     if(strcmp(pipe_separated_commands[k].args[0],"activities")==0){
-                //         activities(background_processes,background_process_count);
-                //     }
+                    if(strcmp(pipe_separated_commands[k].args[0],"activities")==0){
+                        activities(background_processes,background_process_count);
+                    }
 
-                //     else{
-                //         // execute using execvp
-                //         int error_flag = execvp(pipe_separated_commands[k].args[0], pipe_separated_commands[k].args);
-                //         // if error occurs, print error
-                //         if (error_flag == -1) {
-                //             printf("ERROR : '%s' is not a valid command\n",pipe_separated_commands[k].args[0]);
-                //         }
-                //     }
+                    else{
+                        // execute using execvp
+                        int error_flag = execvp(pipe_separated_commands[k].args[0], pipe_separated_commands[k].args);
+                        // if error occurs, print error
+                        if (error_flag == -1) {
+                            printf("ERROR : '%s' is not a valid command\n",pipe_separated_commands[k].args[0]);
+                        }
+                    }
 
-                //     //---------------------------------------------------------------------------------
-                // } else {
-                //     // Parent process
-                //     time_t start_time = time(NULL);
-                //     int status;
-                //     wait(&status);
-                //     time_t end_time = time(NULL);
+                    //---------------------------------------------------------------------------------
+                } else {
+                    // Parent process
+                    time_t start_time = time(NULL);
+                    int status;
+                    wait(&status);
+                    time_t end_time = time(NULL);
                     
-                //     // if (end_time - start_time > 2) {
-                //     //     printf("Foreground process '%s' took %lds\n", args[0], (long)(end_time - start_time));
-                //     // }
-                // }
+                    // if (end_time - start_time > 2) {
+                    //     printf("Foreground process '%s' took %lds\n", args[0], (long)(end_time - start_time));
+                    // }
+                }
 
                 // Reset stdin and stdout
                 dup2(saved_stdin, STDIN_FILENO);
                 dup2(saved_stdout, STDOUT_FILENO);
                 close(saved_stdin);
                 close(saved_stdout);
+                continue;
             }
 
             // if not, add the input to the list of past events
