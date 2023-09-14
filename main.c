@@ -86,6 +86,7 @@ void execute_foreground(char* args[], pid_t shell_pid){
 
         pid_t my_pid = getpid();
 
+        signal(SIGTSTP,SIG_DFL);
         signal(SIGTTOU, SIG_IGN);
         // Bring the group to the foreground
         tcsetpgrp(backup_input, my_pid);
@@ -102,7 +103,7 @@ void execute_foreground(char* args[], pid_t shell_pid){
     else {
 
         // printf("reached parent\n");
-        wait(NULL);
+        waitpid(child_pid,NULL,WUNTRACED);
 
         signal(SIGTTOU, SIG_IGN);
         // Give control back to the shell
@@ -120,7 +121,6 @@ void remove_from_bg_list(pid_t pid){
 }
 
 void bring_to_foreground(pid_t pid){// even though int is being passed
-    // [TODO] not printing upon ending for some reason
 
     // Check if the process with the specified PID exists
     if (kill(pid, 0) == -1) {
@@ -521,7 +521,7 @@ int main()
 
                     int append=0;
                     int error_detected=0;
-                    // [TODO: Error handling][TODO: add append more too]
+                    // [TODO: Error handling]
                     for (int i = 0; i < pipe_separated_commands[k].numArgs && error_detected==0 ; i++) {
 
                         if (strcmp(pipe_separated_commands[k].args[i], "<") == 0) {
@@ -554,7 +554,7 @@ int main()
                                 append=1; 
                                 break;
                             } else {
-                                printf("Error: Missing output file after '>'\n");
+                                printf("Error: Missing output file after '>>'\n");
                                 error_detected=1;
                             }
                         }
