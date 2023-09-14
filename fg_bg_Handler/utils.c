@@ -40,6 +40,7 @@ void check_background_processes_sync(int* background_process_count,struct Backgr
             // perror("waitpid hello");
         } else if (result == 0) {
             // The process is still running
+            strcpy(background_processes[i].status,"Running");
             continue;
         } else {
             // The process has exited

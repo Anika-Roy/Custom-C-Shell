@@ -17,6 +17,7 @@ int background_process_count = 0;
 
 int backup_input;
 int backup_output;
+
 pid_t shell_pid;
 
 void execute_background(char *args[]) {
@@ -114,6 +115,13 @@ void execute_foreground(char* args[], pid_t shell_pid){
 void bring_to_foreground(pid_t pid){// even though int is being passed
     // [TODO] not printing upon ending for some reason
 
+    // Check if the process with the specified PID exists
+    if (kill(pid, 0) == -1) {
+        printf("No such process found\n");
+        // exit(EXIT_FAILURE);
+        return;
+    }
+
     // printf("reached here\n");
     signal(SIGTTOU, SIG_IGN);
     // Bring the group to the foreground
@@ -133,24 +141,41 @@ void bring_to_foreground(pid_t pid){// even though int is being passed
 }
 
 void resume_background_process(pid_t pid){
+    // Check if the process with the specified PID exists
+    if (kill(pid, 0) == -1) {
+        printf("No such process found\n");
+        // exit(EXIT_FAILURE);
+        return;
+    }
+
+    // send a sigcontinue signal in case its stopped
+    kill(pid,SIGCONT);
+    // [TODO]change its status to running
 
 }
 void handle_signal(int signum) {
     switch (signum) {
         case SIGCHLD:
-            // printf("SIGCHLD received\n");
-            // Handle child process terminated (SIGCHLD)
-            // Add your handling code here
             check_background_processes_sync(&background_process_count,background_processes);
             break;
         case SIGTSTP: // Ctrl+Z
+            check_background_processes_sync(&background_process_count,background_processes);
             printf("SIGTSTP received\n");
-            
             break;
+        
         case SIGINT: // Ctrl+C
             /* Interrupt any currently running foreground process by sending it the SIGINT signal. 
             It has no effect if no foreground process is currently running.*/
             printf("SIGINT received\n");
+            // get group id of the current foreground process
+            pid_t gpid = getpid();
+
+            // send a SIGINT signal to the foreground process group
+            kill(gpid,SIGINT);
+
+            // Give control back to the shell
+            signal(SIGTTOU, SIG_IGN);
+            tcsetpgrp(backup_input, shell_pid);
 
             break;
         // Add cases for other signals you want to handle
@@ -172,6 +197,9 @@ int main()
     sigaction(SIGCHLD, &sa, NULL); // Handle child process terminated (SIGCHLD)
     sigaction(SIGTSTP, &sa, NULL); // Handle Ctrl+Z (SIGTSTP)
     // sigaction(SIGINT, &sa, NULL); // Handle Ctrl+C (SIGINT)
+
+    // let my main program ignore these signals so that I can give them new functionality
+    signal(SIGTSTP, SIG_IGN); //ignore Ctrl+Z
 
 
     // Keep accepting commands
@@ -200,12 +228,16 @@ int main()
 
     while (1)
     {
-        // printf("starting again!\n");
-        // Print appropriate prompt with username, systemname and directory before accepting input
-        // printf("background_process_count: %d\n",background_process_count );
         prompt(store_calling_directory);
+        // Check if Ctrl+D was entered by checking for NULL in fgets
+
         char input[4096];
-        fgets(input, 4096, stdin);
+        char* result=fgets(input, 4096, stdin);
+
+        if(result==NULL){
+            // Ctrl+D is received
+            kill(0, SIGKILL);
+        }
 
         //continue if input is empty
         if (strcmp(input, "\n") == 0)
@@ -398,7 +430,11 @@ int main()
                     bring_to_foreground(pid);
                     continue;
                 }
-                
+                else if(strcmp(pipe_separated_commands[k].args[0],"bg")==0){
+                    int pid = atoi(pipe_separated_commands[k].args[1]);
+                    resume_background_process(pid);
+                    continue;
+                }
                 else{
                     
                     // Checking for redirection block (from ChatGPT)
