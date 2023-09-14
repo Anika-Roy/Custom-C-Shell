@@ -333,6 +333,7 @@ int main()
                         // if error occurs, print error
                         if (error_flag == -1) {
                             printf("ERROR : '%s' is not a valid command\n",pipe_separated_commands[k].args[0]);
+                            flag=0;
                             exit(EXIT_FAILURE);
                         }
                         exit(EXIT_SUCCESS);
@@ -401,6 +402,9 @@ int main()
                 }
 
                 else if(strcmp(pipe_separated_commands[k].args[0],"exit")==0){
+                    // store in pastevents
+                    add_event("exit", events, &event_count);
+                    write_past_events(events, event_count, history_file_path);
                     exit(0);
                 }
 

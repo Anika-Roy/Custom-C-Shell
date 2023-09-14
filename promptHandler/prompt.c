@@ -13,7 +13,7 @@ Absolute path of a directory/file must be shown when outside the home directory.
 
 */
 int tokeniser(struct TokenWithDelimiter tokens[], char input[]) {
-    // After a lot of trial and error, discussed with Ujjwal Shekhar(2021113009)
+    // After a lot of trial and error,help from ChatGPT, discussed with Ujjwal Shekhar(2021113009)
  
     // Tokenize with all whitespaces (space and tab) to get command and arguments
 
@@ -185,9 +185,8 @@ int handle_pastevents_execute_and_tokenise(char* input,char events[][MAX_EVENT_L
 }
 
 void prompt(char *store_calling_directory) {
-    /* 
-    ChatGPT and Copilot usage: error handling and import libraries
-    */
+    // Reference used: ChatGPT
+
     char hostname[1024];
     char cwd[1024];
 
@@ -208,14 +207,30 @@ void prompt(char *store_calling_directory) {
         exit(EXIT_FAILURE);
     }
 
+    // if (strstr(cwd, store_calling_directory) != NULL) {
+    //         char *relative_path = strstr(cwd, store_calling_directory);
+    //         // printf("%s\n", relative_path);
+    //         printf("<%s@%s:~%s> ", username, hostname, relative_path + strlen(store_calling_directory));
+    //     }
+    //     else{
+    //         printf("<%s@%s:%s> ", username, hostname, cwd);
+    //     }
     if (strstr(cwd, store_calling_directory) != NULL) {
-            char *relative_path = strstr(cwd, store_calling_directory);
-            // printf("%s\n", relative_path);
-            printf("<%s@%s:~%s> ", username, hostname, relative_path + strlen(store_calling_directory));
-        }
-        else{
-            printf("<%s@%s:%s> ", username, hostname, cwd);
-        }
+        char *relative_path = strstr(cwd, store_calling_directory);
+
+        // Customize the colors for different parts of the prompt
+        printf("\x1B[1;36m<\x1B[0m"); // Green color for username and hostname
+        printf("\x1B[1;34m%s\x1B[0m", username); // Blue color for username
+        printf("\x1B[1;36m@\x1B[0m");
+        printf("\x1B[1;35m%s\x1B[0m", hostname); // Magenta color for hostname
+        printf("\x1B[1;36m:~%s>\x1B[0m ", relative_path + strlen(store_calling_directory)); // Green color for the path
+    } else {
+        printf("\x1B[1;36m<\x1B[0m");
+        printf("\x1B[1;34m%s\x1B[0m", username);
+        printf("\x1B[1;36m@\x1B[0m");
+        printf("\x1B[1;35m%s\x1B[0m", hostname);
+        printf("\x1B[1;36m:%s>\x1B[0m ", cwd);
+    }
 
 }
     
