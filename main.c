@@ -90,19 +90,6 @@ void execute_foreground(char* args[], pid_t shell_pid){
         // Bring the group to the foreground
         tcsetpgrp(backup_input, my_pid);
 
-        // fprintf(stderr, "PID %s",strerror(errno));
-
-        // write(1,"hello\n",6);
-
-        // pid_t my_pid = getpid();
-
-        // print the args
-        // for(int i=0;args[i]!=NULL;i++){
-        //     printf("%d->%s\n",i,args[i]);
-        // }
-
-        // printf("called execvp!\n");
-
         int error_flag = execvp(args[0], args);
         // if error occurs, print error
         if (error_flag == -1) {
@@ -326,6 +313,7 @@ int main()
                     }
 
                     pid_t child_pid = fork();
+
                     if (child_pid < 0) {
                         perror("fork");
                         exit(EXIT_FAILURE);

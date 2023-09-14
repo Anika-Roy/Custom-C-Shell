@@ -15,6 +15,6 @@ void activities(struct BackgroundProcess background_processes[], int num_backgro
         printf("%s : %d - %s\n", background_processes[i].name, background_processes[i].pid, background_processes[i].status);
     }
 
-    exit(EXIT_SUCCESS);
+    return;
     // return;
 }
