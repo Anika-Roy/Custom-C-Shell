@@ -34,6 +34,7 @@ void execute_background(char *args[]) {
         setpgid(child_pid,child_pid);
 
         // Redirect standard input, output, and error to /dev/null
+        // Obtained from ChatGPT
         int dev_null = open("/dev/null", O_RDWR);
         if (dev_null == -1) {
             perror("open");
@@ -174,6 +175,7 @@ void kill_background_processes(){
 void empty() {return;}
 
 void handle_signal(int signum) {
+    //The basic skeleton of this function is taken from ChatGPT, but it has been majorly modified
     switch (signum) {
         case SIGCHLD:
             check_background_processes_sync(&background_process_count,background_processes);
