@@ -10,3 +10,4 @@ Building my own C shell :D
 5. If a command is not found, it'll be treated as a system command
 6. All input output redirections need to be space separated
 7. If a prior command in piping or redirection gives an error, redirect or pipe will not be executed completely
+8. Redirections and Pipes aren't implemented for user defined functions
