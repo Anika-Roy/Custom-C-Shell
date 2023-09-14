@@ -77,7 +77,7 @@ void neonate(int time_interval) {
         // child process
         while(1){
             
-            sleep(1);
+            sleep(time_interval);
             // get the pid of the most recent process
             pid_t pid = get_most_recent_pid();
             printf("%d\n", pid);

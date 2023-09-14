@@ -112,6 +112,13 @@ void execute_foreground(char* args[], pid_t shell_pid){
     }
 }
 
+void remove_from_bg_list(pid_t pid){
+    for(int i=0 ; i<background_process_count ; i++){
+        if(background_processes[i].pid==pid)
+            remove_background_process(i,&background_process_count,background_processes);
+    }
+}
+
 void bring_to_foreground(pid_t pid){// even though int is being passed
     // [TODO] not printing upon ending for some reason
 
@@ -121,6 +128,9 @@ void bring_to_foreground(pid_t pid){// even though int is being passed
         // exit(EXIT_FAILURE);
         return;
     }
+
+    //remove the process details from background list
+    remove_from_bg_list(pid);
 
     // printf("reached here\n");
     signal(SIGTTOU, SIG_IGN);
@@ -160,22 +170,34 @@ void kill_background_processes(){
         kill(background_processes[i].pid,SIGKILL);
     }
 }
+
+void empty() {return;}
+
 void handle_signal(int signum) {
     switch (signum) {
         case SIGCHLD:
             check_background_processes_sync(&background_process_count,background_processes);
             break;
         case SIGTSTP: // Ctrl+Z
+            /* Push the (if any) running foreground process to the background and change it’s 
+            state from “Running” to “Stopped”. It has no effect on the shell if no foreground process is running.*/
+            empty(); // an empty statement to avoid the warning
+            break;
+        
+        case SIGSTOP:
             check_background_processes_sync(&background_process_count,background_processes);
-            printf("SIGTSTP received\n");
+            printf("SIGSTOP received\n");
             break;
         
         case SIGINT: // Ctrl+C
             /* Interrupt any currently running foreground process by sending it the SIGINT signal. 
             It has no effect if no foreground process is currently running.*/
-            printf("SIGINT received\n");
+            empty(); // an empty statement to avoid the warning
+
             // get group id of the current foreground process
-            pid_t gpid = getpid();
+            int gpid = getpid();
+
+            if(gpid==shell_pid) return;
 
             // send a SIGINT signal to the foreground process group
             kill(gpid,SIGINT);
@@ -184,6 +206,10 @@ void handle_signal(int signum) {
             signal(SIGTTOU, SIG_IGN);
             tcsetpgrp(backup_input, shell_pid);
 
+            break;
+
+        case SIGCONT:
+            check_background_processes_sync(&background_process_count,background_processes);
             break;
         // Add cases for other signals you want to handle
         default:
@@ -203,7 +229,7 @@ int main()
     // Set up signal handlers for specific signals
     sigaction(SIGCHLD, &sa, NULL); // Handle child process terminated (SIGCHLD)
     sigaction(SIGTSTP, &sa, NULL); // Handle Ctrl+Z (SIGTSTP)
-    // sigaction(SIGINT, &sa, NULL); // Handle Ctrl+C (SIGINT)
+    sigaction(SIGINT, &sa, NULL); // Handle Ctrl+C (SIGINT)
 
     // Keep accepting commands
     char store_calling_directory[1024];
@@ -294,15 +320,15 @@ int main()
 
                 get_input_output_fds(pipe_separated_commands,&input_fd,&output_fd,num_pipes);
 
-                // int error_flag=0; in case piping or redirection cause any errors, the pipe will not be completely executed
-                for(int k=0 ; k<num_pipes ; k++){
+                int error_flag=0; // in case piping or redirection cause any errors, the pipe will not be completely executed
+
+                for(int k=0 ; k<num_pipes && error_flag==0 ; k++){
 
                     if (k < num_pipes - 1) {
                         // Create a pipe for communication between commands
                         if (pipe(pipe_separated_commands[k].pipe_fds) == -1) {
                             perror("pipe");
-                            exit(EXIT_FAILURE);
-                            // error_flag=1;
+                            error_flag=1;
                         }
                     }
 
@@ -310,10 +336,10 @@ int main()
 
                     if (child_pid < 0) {
                         perror("fork");
-                        exit(EXIT_FAILURE);
-                    } else if (child_pid == 0) {
+                        error_flag=1;
+                    } 
+                    else if (child_pid == 0) {
                         // Child process
-
                         // Handle input redirection if needed
                         if (k > 0) {
                             dup2(pipe_separated_commands[k - 1].pipe_fds[0], STDIN_FILENO);
@@ -333,7 +359,6 @@ int main()
                         // if error occurs, print error
                         if (error_flag == -1) {
                             printf("ERROR : '%s' is not a valid command\n",pipe_separated_commands[k].args[0]);
-                            flag=0;
                             exit(EXIT_FAILURE);
                         }
                         exit(EXIT_SUCCESS);
@@ -350,11 +375,23 @@ int main()
                             close(pipe_separated_commands[k - 1].pipe_fds[0]);
                         }
                         // Wait for the child to complete
-                        wait(NULL); // [TODO] Handle errors in piping
+                        int status;
+                        wait(&status);
+                        // check if it the child returned with success or failure
+                        if (WIFEXITED(status)) {
+                            // printf("Child exited with status: %d\n", WEXITSTATUS(status));
+                            if(WEXITSTATUS(status)==EXIT_FAILURE){
+                                error_flag=1;
+                            }
+                        }
+
                     }
 
                 }
+                if(error_flag==1)
+                    printf("There was an error with piping\n");
             }
+            
             // single pipe
             else{
                 int k=0;
@@ -368,6 +405,12 @@ int main()
                 // printf("%s\n",pipe_separated_commands[k].args[0]);
                 
                 if(strcmp(pipe_separated_commands[k].args[0],"ping")==0){
+
+                    if(pipe_separated_commands[k].numArgs<3){
+                        printf("Error: Not enough arguments\n");
+                        continue;
+                    }
+
                     pid_t pid=atoi(pipe_separated_commands[k].args[1]);
                     int signal_number=atoi(pipe_separated_commands[k].args[2]);
 
@@ -382,13 +425,21 @@ int main()
                 }
 
                 else if(strcmp(pipe_separated_commands[k].args[0],"iMan")==0){
+
+                    if(pipe_separated_commands[k].numArgs<2){
+                        printf("Error: Not enough arguments\n");
+                        continue;
+                    }
                     fetch_man_page(pipe_separated_commands[k].args[1]);
                     continue;
                 }
 
                 else if(strcmp(pipe_separated_commands[k].args[0],"neonate")==0){
-                    // print the 1 and 2nd indexed arguements
-                    // printf("%s %s\n",pipe_separated_commands[k].args[1],pipe_separated_commands[k].args[2]);
+                    
+                    if(pipe_separated_commands[k].numArgs<3){
+                        printf("Error: Not enough arguments\n");
+                        continue;
+                    }
 
                     int time_interval= atoi(pipe_separated_commands[k].args[2]);
                     neonate(time_interval);
@@ -435,11 +486,22 @@ int main()
                     continue;
                 }
                 else if(strcmp(pipe_separated_commands[k].args[0],"fg")==0){
+
+                    if(pipe_separated_commands[k].numArgs<2){
+                        printf("Error: Not enough arguments\n");
+                        continue;
+                    }
+
                     int pid = atoi(pipe_separated_commands[k].args[1]);
                     bring_to_foreground(pid);
                     continue;
                 }
                 else if(strcmp(pipe_separated_commands[k].args[0],"bg")==0){
+
+                    if(pipe_separated_commands[k].numArgs<2){
+                        printf("Error: Not enough arguments\n");
+                        continue;
+                    }
                     int pid = atoi(pipe_separated_commands[k].args[1]);
                     resume_background_process(pid);
                     continue;
@@ -457,8 +519,10 @@ int main()
                     int saved_stdin = dup(STDIN_FILENO); // Save the original stdin
                     int saved_stdout = dup(STDOUT_FILENO); // Save the original stdout
 
+                    int append=0;
+                    int error_detected=0;
                     // [TODO: Error handling][TODO: add append more too]
-                    for (int i = 0; i < pipe_separated_commands[k].numArgs; i++) {
+                    for (int i = 0; i < pipe_separated_commands[k].numArgs && error_detected==0 ; i++) {
 
                         if (strcmp(pipe_separated_commands[k].args[i], "<") == 0) {
                             // Found input redirection symbol '<'
@@ -468,7 +532,7 @@ int main()
                                 // break;
                             } else {
                                 printf("Error: Missing input file after '<'\n");
-                                exit(EXIT_FAILURE);
+                                error_detected=1;
                             }
                         } 
                         else if (strcmp(pipe_separated_commands[k].args[i], ">") == 0) {
@@ -479,9 +543,25 @@ int main()
                                 break;
                             } else {
                                 printf("Error: Missing output file after '>'\n");
-                                exit(EXIT_FAILURE);
+                                error_detected=1;
                             }
                         }
+                        else if(strcmp(pipe_separated_commands[k].args[i], ">>") == 0) {
+                            // Found output redirection symbol '>'
+                            if (i + 1 < pipe_separated_commands[k].numArgs) {
+                                output_file = pipe_separated_commands[k].args[i + 1];
+                                pipe_separated_commands[k].args[i] = NULL; // Null-terminate the command
+                                append=1; 
+                                break;
+                            } else {
+                                printf("Error: Missing output file after '>'\n");
+                                error_detected=1;
+                            }
+                        }
+                    }
+
+                    if(error_detected==1){
+                        continue;
                     }
 
                     // printf("input file: %s\n",input_file);
@@ -493,22 +573,36 @@ int main()
                         input_fd = open(input_file, O_RDONLY);
                         if (input_fd == -1) {
                             perror("open");
-                            exit(EXIT_FAILURE);
+                            error_detected=1;   
                         }
                         dup2(input_fd, STDIN_FILENO);
                         close(input_fd);
                     }
 
-                    if (output_file) {
-                        // printf("output file: %s\n",output_file);
-                        // Open the output file and associate it with STDOUT_FILENO
+                    if (output_file && append==0) {
+                        // Open the output file in write mode and associate it with STDOUT_FILENO
                         output_fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                         if (output_fd == -1) {
                             perror("open");
-                            exit(EXIT_FAILURE);
+                            error_detected = 1;
                         }
                         dup2(output_fd, STDOUT_FILENO);
                         close(output_fd);
+                    }
+
+                    if(output_file && append==1){
+                        // Open the output file in append mode and associate it with STDOUT_FILENO
+                        output_fd = open(output_file, O_WRONLY | O_CREAT | O_APPEND, 0644);
+                        if (output_fd == -1) {
+                            perror("open");
+                            error_detected = 1;
+                        }
+                        dup2(output_fd, STDOUT_FILENO);
+                        close(output_fd);
+                    }
+
+                    if(error_detected==1){
+                        continue;
                     }
                     
                     execute_foreground(pipe_separated_commands[k].args,shell_pid);
