@@ -17,6 +17,7 @@ Building my own C shell :D
 12. In activities function, the finished processes are also shown before being removed
 13. in the command `echo <string>`, do not put quotes around the string for default behaviour
 14. sed doesn't work with execvp
+15. `snprintf` gives a warning in function peek, but can be safely ignored
 
 
 # ChatGPT usage
