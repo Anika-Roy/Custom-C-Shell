@@ -224,7 +224,6 @@ int main()
 
 
             // execute all pipe separated commands in a loop -- using ChatGPT
-
             // if num_pipes>1, only then create pipes
             if (num_pipes>1){
                 
@@ -233,75 +232,10 @@ int main()
                 int output_fd = STDOUT_FILENO;
                 // int saved_stdout = dup(STDOUT_FILENO); // Save the original stdout
 
-                // int error_flag=0; // in case piping or redirection cause any errors, the pipe will not be completely executed
+                get_input_output_fds(pipe_separated_commands,&input_fd,&output_fd,num_pipes);
+
+                // int error_flag=0; in case piping or redirection cause any errors, the pipe will not be completely executed
                 for(int k=0 ; k<num_pipes ; k++){
-                    
-                    // check for file redirection if it is the first pipe
-                    if(k==0){
-                        char* input_file = NULL;
-                        // [TODO: Error handling]
-                        for (int i = 0; i < pipe_separated_commands[k].numArgs; i++) {
-                            if (strcmp(pipe_separated_commands[k].args[i], "<") == 0) {
-                                // Found input redirection symbol '<'
-                                if (i + 1 < pipe_separated_commands[k].numArgs) {
-                                    input_file = pipe_separated_commands[k].args[i + 1];
-                                    pipe_separated_commands[k].args[i] = NULL; // Null-terminate the command
-                                    // break;
-                                } else {
-                                    printf("Error: Missing input file after '<'\n");
-                                    exit(EXIT_FAILURE);
-                                }
-                            } 
-                        }
-
-                        if (input_file) {
-                            // Open the input file and associate it with STDIN_FILENO
-                            input_fd = open(input_file, O_RDONLY);
-                            if (input_fd == -1) {
-                                perror("open");
-                                exit(EXIT_FAILURE);
-                            }
-                            // dup2(input_fd, STDIN_FILENO);
-                            // close(input_fd);
-                        }
-                    }
-
-                    // check for file redirection if it is the last pipe
-                    if(k==num_pipes-1){
-                        char* output_file = NULL;
-                        // [TODO: Error handling]
-                        for (int i = 0; i < pipe_separated_commands[k].numArgs; i++) {
-                            if (strcmp(pipe_separated_commands[k].args[i], ">") == 0) {
-                                // Found output redirection symbol '>'
-                                if (i + 1 < pipe_separated_commands[k].numArgs) {
-                                    output_file = pipe_separated_commands[k].args[i + 1];
-                                    pipe_separated_commands[k].args[i] = NULL; // Null-terminate the command
-                                    break;
-                                } else {
-                                    printf("Error: Missing output file after '>'\n");
-                                    exit(EXIT_FAILURE);
-                                }
-                            }
-                        }
-
-                        if (output_file) {
-                            // printf("output file: %s\n",output_file);
-                            // Open the output file and associate it with STDOUT_FILENO
-                            output_fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                            if (output_fd == -1) {
-                                perror("open");
-                                exit(EXIT_FAILURE);
-                            }
-                            // dup2(output_fd, STDOUT_FILENO);
-                            // close(output_fd);
-                        }
-                    }
-
-                    // printf("input_fd: %d\n",input_fd);
-                    // printf("output_fd: %d\n",output_fd);
-
-                    // in case we need to put it in background
-                    // delimiter = tokens[j].delimiter;
 
                     if (k < num_pipes - 1) {
                         // Create a pipe for communication between commands
