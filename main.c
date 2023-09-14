@@ -153,6 +153,13 @@ void resume_background_process(pid_t pid){
     // [TODO]change its status to running
 
 }
+
+void kill_background_processes(){
+    // iterate through the list and kill the process groups
+    for(int i=0; i< background_process_count ; i++){
+        kill(background_processes[i].pid,SIGKILL);
+    }
+}
 void handle_signal(int signum) {
     switch (signum) {
         case SIGCHLD:
@@ -198,10 +205,6 @@ int main()
     sigaction(SIGTSTP, &sa, NULL); // Handle Ctrl+Z (SIGTSTP)
     // sigaction(SIGINT, &sa, NULL); // Handle Ctrl+C (SIGINT)
 
-    // let my main program ignore these signals so that I can give them new functionality
-    signal(SIGTSTP, SIG_IGN); //ignore Ctrl+Z
-
-
     // Keep accepting commands
     char store_calling_directory[1024];
     getcwd(store_calling_directory, sizeof(store_calling_directory));
@@ -236,6 +239,8 @@ int main()
 
         if(result==NULL){
             // Ctrl+D is received
+            // Iterate through the other process groups and kill them
+            kill_background_processes();
             kill(0, SIGKILL);
         }
 
