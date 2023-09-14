@@ -12,6 +12,11 @@ Building my own C shell :D
 7. If a prior command in piping or redirection gives an error, redirect or pipe will not be executed completely
 8. Redirections and Pipes aren't implemented for user defined functions
 9. `exit` is used standalone, so it goes into history as only exit
+10. Ctrl+D can be used to exit only when waiting for a prompt to be entered
+11. If the page requested by iMan is not found, the html code of the webpage is displayed, the error message is already within the page
+12. In activities function, the finished processes are also shown before being removed
+13. in the command `echo <string>`, do not put quotes around the string for default behaviour
+14. sed doesn't work with execvp
 
 
 # ChatGPT usage
