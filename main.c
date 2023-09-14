@@ -17,6 +17,7 @@ int background_process_count = 0;
 
 int backup_input;
 int backup_output;
+pid_t shell_pid;
 
 void execute_background(char *args[]) {
     // taken from ChatGPT
@@ -27,11 +28,9 @@ void execute_background(char *args[]) {
         exit(EXIT_FAILURE);
     } else if (child_pid == 0) {
         // Child process
-        // Create a new session and detach from terminal
-        if (setsid() == -1) {
-            perror("setsid");
-            exit(EXIT_FAILURE);
-        }
+        
+        // set process group id to its own pid
+        setpgid(child_pid,child_pid);
 
         // Redirect standard input, output, and error to /dev/null
         int dev_null = open("/dev/null", O_RDWR);
@@ -48,11 +47,11 @@ void execute_background(char *args[]) {
         execvp(args[0], args);
         perror("execvp"); // This will be executed only if execvp fails
         exit(EXIT_FAILURE);
+
     } else {
         // Parent process
 
         // Store child_pid in your data structure for background processes
-
         // concatenate the args to get the whole command
         char command[MAX_COMMAND_LENGTH];
         command[0]='\0';
@@ -112,6 +111,30 @@ void execute_foreground(char* args[], pid_t shell_pid){
     }
 }
 
+void bring_to_foreground(pid_t pid){// even though int is being passed
+    // [TODO] not printing upon ending for some reason
+
+    // printf("reached here\n");
+    signal(SIGTTOU, SIG_IGN);
+    // Bring the group to the foreground
+    tcsetpgrp(backup_input, pid);
+
+    // send a sigcontinue signal in case its stopped
+    kill(pid,SIGCONT);
+
+    int status;
+    waitpid(pid,&status,WUNTRACED);
+
+    signal(SIGTTOU, SIG_IGN);
+    // Give control back to the shell
+    tcsetpgrp(backup_input, shell_pid);
+
+    return;
+}
+
+void resume_background_process(pid_t pid){
+
+}
 void handle_signal(int signum) {
     switch (signum) {
         case SIGCHLD:
@@ -171,7 +194,7 @@ int main()
     read_past_events(events, &event_count, history_file_path); 
 
     // store the pid of the shell
-    pid_t shell_pid = getpid(); 
+    shell_pid = getpid(); 
     backup_input = STDIN_FILENO; 
     backup_output = STDOUT_FILENO;
 
@@ -298,7 +321,6 @@ int main()
             else{
                 int k=0;
                 
-
                 // If the delimiter is '&', execute the command in the background
                 if (delimiter == '&') {
                     // printf("background process\n");
@@ -371,6 +393,12 @@ int main()
                     activities(background_processes,background_process_count);
                     continue;
                 }
+                else if(strcmp(pipe_separated_commands[k].args[0],"fg")==0){
+                    int pid = atoi(pipe_separated_commands[k].args[1]);
+                    bring_to_foreground(pid);
+                    continue;
+                }
+                
                 else{
                     
                     // Checking for redirection block (from ChatGPT)
